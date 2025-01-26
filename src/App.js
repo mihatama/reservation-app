@@ -67,9 +67,24 @@ function App({ signOut, user }) {
   const checkAdminGroup = async () => {
     try {
       const session = await fetchAuthSession();
-      // ★ CognitoグループはIDトークン側にあることが多い
-      const groups = session.idToken?.payload?.['cognito:groups'] || [];
-      if (groups.includes('Admin')) {
+  
+      // 取得した session 全体をまずコンソールに出してみる
+      console.log('=== Cognito Session ===', session);
+  
+      // IDトークン / Accessトークン それぞれの payload を出力してみる
+      console.log('=== session.idToken.payload ===', session.idToken?.payload);
+      console.log('=== session.accessToken.payload ===', session.accessToken?.payload);
+  
+      // IDトークン側のグループを取得してみる
+      const groupsFromIdToken = session.idToken?.payload?.['cognito:groups'] || [];
+      console.log('=== Groups from ID token ===', groupsFromIdToken);
+  
+      // Accessトークン側のグループを取得してみる
+      const groupsFromAccessToken = session.accessToken?.payload?.['cognito:groups'] || [];
+      console.log('=== Groups from Access token ===', groupsFromAccessToken);
+  
+      // 実際に isAdmin をセットするときは IDトークン・Accessトークンのどちらかを利用
+      if (groupsFromIdToken.includes('Admin') || groupsFromAccessToken.includes('Admin')) {
         setIsAdmin(true);
       }
     } catch (error) {
