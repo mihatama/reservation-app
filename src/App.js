@@ -1,7 +1,6 @@
 /***************************************************************************
  * App.js (または App.jsx)
  ***************************************************************************/
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 
@@ -11,7 +10,10 @@ import awsconfig from './aws-exports';
 import { fetchAuthSession } from '@aws-amplify/auth';
 
 // Amplify UI
-import { Authenticator } from '@aws-amplify/ui-react';
+import {
+  withAuthenticator,
+  ThemeProvider as AmplifyThemeProvider
+} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 // ページコンポーネント
@@ -45,9 +47,23 @@ const muiTheme = createTheme({
   },
 });
 
+// Amplify UIテーマ（お好みで拡張）
+const amplifyTheme = {
+  name: 'custom-amplify-theme',
+  tokens: {
+    colors: {
+      brand: {
+        primary: {
+          '10': '#e3f2fd',
+          '80': '#1976d2',
+        },
+      },
+    },
+  },
+};
+
 /**
- * 実際のアプリ部分
- * ログインユーザー (user), サインアウト (signOut) が渡される前提
+ * メインアプリ
  */
 function App({ signOut, user }) {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -56,7 +72,7 @@ function App({ signOut, user }) {
     checkAdminGroup();
   }, []);
 
-  // 「Admin」グループに属しているか判定
+  // 「Admin」グループかどうかをチェック (Access トークン側を参照)
   const checkAdminGroup = async () => {
     try {
       const session = await fetchAuthSession();
@@ -106,7 +122,7 @@ function App({ signOut, user }) {
           </Box>
 
           <Routes>
-            {/* 
+            {/*
               管理者でなければ "/" (シフトページ) には行けず /booking にリダイレクト
               管理者なら StaffShiftPage (シフト入力) を表示
             */}
@@ -124,64 +140,72 @@ function App({ signOut, user }) {
 }
 
 /**
- * Authenticator で App を包んで認証を提供するコンポーネント
- * サインアップ画面のフォーム項目をカスタマイズ
+ * withAuthenticator 設定
+ * - signUpAttributes でサインアップ時に取得する属性を指定
+ * - formFields で各フォームフィールドを日本語ラベルにする
  */
-export default function AppWrapper() {
-  return (
-    <Authenticator
-      // 初期表示をサインアップにしたい場合は下記コメントを外す
-      // initialState="signUp"
+const AppWithAuth = withAuthenticator(App, {
+  variation: 'modal', // ログイン画面をモーダルで表示
+  // 1) Cognitoで取り扱うユーザー属性を指定 (標準 + カスタム)
+  //    ここで指定した属性がサインアップ画面に表示される
+  signUpAttributes: [
+    'email',            // メールアドレス (ID扱い)
+    'family_name',      // 姓
+    'given_name',       // 名
+    'custom:furiganaFamily', // フリガナ(姓)
+    'custom:furiganaGiven',  // フリガナ(名)
+    // 必要に応じて phone_number など追加
+  ],
 
-      // サインアップ画面のフィールドを日本語化・並び替え
-      formFields={{
-        signUp: {
-          family_name: {
-            label: '姓名',       // Cognito上: family_name
-            placeholder: '例）山田',
-            isRequired: true,
-            order: 1,
-          },
-          given_name: {
-            label: '名前',      // Cognito上: given_name
-            placeholder: '例）太郎',
-            isRequired: true,
-            order: 2,
-          },
-          "custom:furigana": {
-            label: 'フリガナ',  // Cognito上: custom:furigana
-            placeholder: '例）ヤマダタロウ',
-            isRequired: true,
-            order: 3,
-          },
-          phone_number: {
-            label: '電話番号',  // Cognito上: phone_number
-            placeholder: '例）+818012345678',
-            isRequired: true,
-            order: 4,
-          },
-          email: {
-            label: 'メールアドレス',  // Cognito上: email
-            placeholder: '例）example@example.com',
-            isRequired: true,
-            order: 5,
-          },
-          password: {
-            label: 'パスワード',
-            placeholder: 'パスワードを入力',
-            isRequired: true,
-            order: 6,
-          },
-          confirm_password: {
-            label: 'パスワード（確認）',
-            placeholder: '再度パスワードを入力',
-            isRequired: true,
-            order: 7,
-          },
-        },
-      }}
-    >
-      {({ signOut, user }) => <App signOut={signOut} user={user} />}
-    </Authenticator>
+  // 2) 実際のラベルやプレースホルダを上書き
+  formFields: {
+    signUp: {
+      email: {
+        label: 'メールアドレス',
+        placeholder: 'example@example.com',
+        required: true,
+      },
+      family_name: {
+        label: '姓',
+        placeholder: '例）山田',
+        required: true,
+      },
+      given_name: {
+        label: '名',
+        placeholder: '例）太郎',
+        required: true,
+      },
+      'custom:furiganaFamily': {
+        label: 'フリガナ(姓)',
+        placeholder: '例）ヤマダ',
+        required: true,
+      },
+      'custom:furiganaGiven': {
+        label: 'フリガナ(名)',
+        placeholder: '例）タロウ',
+        required: true,
+      },
+      password: {
+        label: 'パスワード',
+        placeholder: 'パスワードを入力',
+        required: true,
+      },
+      confirm_password: {
+        label: 'パスワード（確認）',
+        placeholder: '再度パスワードを入力',
+        required: true,
+      },
+    },
+  },
+});
+
+// Amplify UI の ThemeProvider で全体を包む
+function AppWrapper() {
+  return (
+    <AmplifyThemeProvider theme={amplifyTheme}>
+      <AppWithAuth />
+    </AmplifyThemeProvider>
   );
 }
+
+export default AppWrapper;
