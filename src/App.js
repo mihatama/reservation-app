@@ -1,7 +1,8 @@
+// src/App.js
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Amplify } from 'aws-amplify'; // Auth はもう存在しない
-import { fetchAuthSession } from '@aws-amplify/auth'; // ← 新しい関数をimport
+import { Amplify } from 'aws-amplify';
+import { fetchAuthSession } from '@aws-amplify/auth'; // v6 Amplify ではモジュールimport
 import awsconfig from './aws-exports';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 
@@ -27,8 +28,10 @@ function App({ signOut, user }) {
     // eslint-disable-next-line
   }, []);
 
+  // 「Admin」グループかどうかをチェックする
   const checkAdminGroup = async () => {
     try {
+      // 現在のセッションを取得し、accessToken.payload の "cognito:groups" を確認
       const session = await fetchAuthSession();
       const groups = session.accessToken?.payload?.['cognito:groups'] || [];
       if (groups.includes('Admin')) {
@@ -46,8 +49,11 @@ function App({ signOut, user }) {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             助産院 予約管理アプリ
           </Typography>
-          
-          {/* 一般ユーザーにはシフト入力を表示しない */}
+
+          {/*
+            管理者 (isAdmin = true) の場合のみ「シフト入力」ボタンを表示
+            → 一般ユーザーには表示しない
+          */}
           {isAdmin && (
             <Button color="inherit" component={Link} to="/">
               シフト入力
@@ -59,6 +65,8 @@ function App({ signOut, user }) {
           <Button color="inherit" component={Link} to="/calendar">
             カレンダー
           </Button>
+
+          {/* サインアウト */}
           <Button color="inherit" onClick={signOut}>
             サインアウト
           </Button>
@@ -72,12 +80,15 @@ function App({ signOut, user }) {
       </Box>
 
       <Routes>
-        {/* 管理者でない場合はシフトページを見せないようリダイレクト */}
-        <Route 
-          path="/" 
+        {/*
+          管理者でなければ "/" (シフトページ) には行けず /booking にリダイレクト
+          管理者なら StaffShiftPage (シフト入力) を表示
+        */}
+        <Route
+          path="/"
           element={
             isAdmin ? <StaffShiftPage /> : <Navigate to="/booking" />
-          } 
+          }
         />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/calendar" element={<CalendarPage />} />

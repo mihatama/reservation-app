@@ -1,3 +1,4 @@
+// src/pages/StaffShiftPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
@@ -31,29 +32,28 @@ export default function StaffShiftPage() {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
-  // 日付 & 時刻ピッカー用
+  // シフト登録用
   const [shiftDate, setShiftDate] = useState(null); // dayjs
   const [startTime, setStartTime] = useState(null); // dayjs
   const [endTime, setEndTime] = useState(null);     // dayjs
 
   const [shiftList, setShiftList] = useState([]);
 
-  // 初回読み込み
   useEffect(() => {
     fetchStaffList();
   }, []);
 
-  // 選択スタッフが変わるたびにシフト一覧をobserveQuery
+  // Staff を選んだら、その Staff のシフト一覧を随時監視
   useEffect(() => {
     if (!selectedStaff) {
       setShiftList([]);
       return;
     }
-    // 1) 全件を observeQuery で監視
-    const subscription = DataStore.observeQuery(Shift).subscribe(snapshot => {
+    const subscription = DataStore.observeQuery(Shift).subscribe((snapshot) => {
       const allShifts = snapshot.items;
-      // 2) JS 側で staffID が一致するシフトだけ抽出
-      const filtered = allShifts.filter(shift => shift.staffID === selectedStaff.id);
+      const filtered = allShifts.filter(
+        (shift) => shift.staffID === selectedStaff.id
+      );
       setShiftList(filtered);
     });
     return () => subscription.unsubscribe();
@@ -65,7 +65,7 @@ export default function StaffShiftPage() {
     setStaffList(staff);
   };
 
-  // スタッフ新規登録
+  // スタッフを新規登録 (名前入力 → ボタン押下)
   const createStaff = async () => {
     if (!staffName.trim()) {
       alert('スタッフ名を入力してください。');
@@ -76,7 +76,7 @@ export default function StaffShiftPage() {
     fetchStaffList();
   };
 
-  // シフト新規登録
+  // シフトを新規登録
   const createShift = async () => {
     if (!selectedStaff) {
       alert('スタッフを選択してください。');
@@ -87,7 +87,7 @@ export default function StaffShiftPage() {
       return;
     }
 
-    const dateStr = shiftDate.format('YYYY-MM-DD'); // '2025-01-01' など
+    const dateStr = shiftDate.format('YYYY-MM-DD');
     const start = startTime
       .set('year', shiftDate.year())
       .set('month', shiftDate.month())
@@ -193,7 +193,7 @@ export default function StaffShiftPage() {
                 </LocalizationProvider>
 
                 <Typography variant="subtitle2" sx={{ mt: 4, mb: 1 }}>
-                  {selectedStaff.name}さんのシフト一覧
+                  {selectedStaff.name} さんのシフト一覧
                 </Typography>
                 <TableContainer component={Paper}>
                   <Table>

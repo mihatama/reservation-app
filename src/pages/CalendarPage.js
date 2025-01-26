@@ -1,3 +1,4 @@
+// src/pages/CalendarPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
@@ -27,28 +28,28 @@ const localizer = dateFnsLocalizer({
 
 export default function CalendarPage() {
   const [shifts, setShifts] = useState([]);
-  const [staffMap, setStaffMap] = useState({}); 
+  const [staffMap, setStaffMap] = useState({});
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    // Staff 一覧
+    // Staff 一覧を取得
     const staffList = await DataStore.query(Staff);
     const map = {};
-    staffList.forEach(staff => {
+    staffList.forEach((staff) => {
       map[staff.id] = staff.name;
     });
     setStaffMap(map);
 
-    // Shift 一覧
+    // Shift 一覧を取得
     const allShifts = await DataStore.query(Shift);
     setShifts(allShifts);
   };
 
-  // react-big-calendar の "events" 用配列を作成
-  const events = shifts.map(shift => {
+  // react-big-calendar 用配列
+  const events = shifts.map((shift) => {
     const start = new Date(shift.startTime);
     const end = new Date(shift.endTime);
     const staffName = staffMap[shift.staffID] || 'No Staff';
@@ -63,7 +64,9 @@ export default function CalendarPage() {
 
   const onEventSelected = (event) => {
     alert(
-      `選択されたイベント: ${event.title}\n開始: ${dayjs(event.start).format('YYYY/MM/DD HH:mm')}\n終了: ${dayjs(event.end).format('YYYY/MM/DD HH:mm')}`
+      `選択されたイベント: ${event.title}\n開始: ${dayjs(event.start).format(
+        'YYYY/MM/DD HH:mm'
+      )}\n終了: ${dayjs(event.end).format('YYYY/MM/DD HH:mm')}`
     );
   };
 

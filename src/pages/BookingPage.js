@@ -1,3 +1,4 @@
+// src/pages/BookingPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift, Reservation } from '../models';
@@ -15,7 +16,6 @@ import {
   TableBody
 } from '@mui/material';
 
-import { fetchAuthSession } from '@aws-amplify/auth';
 import dayjs from 'dayjs';
 
 // Material UI Pickers
@@ -23,75 +23,75 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
+// v6 では Auth は存在しないため、ユーザー sub を取得したい場合は:
+import { fetchAuthSession } from '@aws-amplify/auth';
+
 export default function BookingPage() {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null); // dayjsオブジェクト
+  const [selectedDate, setSelectedDate] = useState(null);
   const [availableShifts, setAvailableShifts] = useState([]);
   const [clientName, setClientName] = useState('');
   const [userSub, setUserSub] = useState('');
 
-  // ログインユーザーのsubを取得
+  // ログインユーザーの sub を取得
   useEffect(() => {
     getUserSub();
   }, []);
 
   const getUserSub = async () => {
-    const session = await fetchAuthSession();
-    const sub = session.idToken?.payload?.sub;
-    setUserSub(sub);
+    try {
+      const session = await fetchAuthSession();
+      // idToken.payload.sub にユーザーの sub が入る
+      const sub = session.idToken?.payload?.sub;
+      setUserSub(sub || '');
+    } catch (err) {
+      console.error('Fail to fetch session', err);
+    }
   };
 
   useEffect(() => {
     fetchStaff();
   }, []);
 
-  // スタッフ一覧を取得
   const fetchStaff = async () => {
     const staff = await DataStore.query(Staff);
     setStaffList(staff);
   };
 
-  // シフト一覧を取得
   const fetchShifts = async () => {
     if (!selectedStaff || !selectedDate) {
       alert('スタッフと日付を指定してください。');
       return;
     }
 
-    const dateStr = selectedDate.format('YYYY-MM-DD'); // AWSDate
-    // "staffID_date" = "{スタッフID}_{日付}"
+    const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
 
-    // DataStore で staffID_date が合致するShiftを検索
     const allShifts = await DataStore.query(Shift, (s) =>
       s.staffID_date.eq(staffIDDate)
     );
-    // 日付一致で絞り込み
     const filtered = allShifts.filter((shift) => shift.date === dateStr);
-
     setAvailableShifts(filtered);
   };
 
-  // 予約作成
   const createReservation = async (shift) => {
     if (!clientName.trim()) {
       alert('お客様名を入力してください。');
       return;
     }
-    // ownerはユーザーのsub（schema.graphqlでownerField指定）
     const staffID_dateValue = `${shift.staffID}_${shift.date}`;
 
     try {
       await DataStore.save(
         new Reservation({
           staffID: shift.staffID,
-          staffID_date: staffID_dateValue, // 必須
+          staffID_date: staffID_dateValue,
           date: shift.date,
           startTime: shift.startTime,
           endTime: shift.endTime,
           clientName: clientName,
-          owner: userSub  // ここを設定
+          owner: userSub // 予約のオーナーを設定 (schemaに owner がある場合)
         })
       );
       alert('予約が完了しました。');
