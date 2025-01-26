@@ -1,0 +1,11 @@
+{
+  "AppSyncApiName": "reservationapp",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authreservationapp797b902e",
+      "Outputs.UserPoolId"
+    ]
+  }
+}

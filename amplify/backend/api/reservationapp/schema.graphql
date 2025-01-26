@@ -1,0 +1,59 @@
+type Staff 
+  @model
+  @auth(rules: [
+    # Admin グループのみ作成・更新・削除可
+    { allow: groups, groups: ["Admin"], operations: [create, update, delete, read] },
+    # それ以外の認証済みユーザー(private)は読み取りのみ可
+    { allow: private, operations: [read] }
+  ]) {
+  id: ID!
+  name: String!
+
+  # Staff(1) -> Shift(N)
+  shifts: [Shift] @hasMany(indexName: "byStaff", fields: ["id"])
+
+  # Staff(1) -> Reservation(N)
+  reservations: [Reservation] @hasMany(indexName: "byStaffInReservation", fields: ["id"])
+}
+
+type Shift
+  @model
+  @auth(rules: [
+    # Admin グループのみ作成・更新・削除可
+    { allow: groups, groups: ["Admin"], operations: [create, update, delete, read] },
+    # それ以外の認証済みユーザーは読み取りのみ可
+    { allow: private, operations: [read] }
+  ]) {
+  id: ID!
+  staffID: ID!
+  staffID_date: ID! @index(name: "byStaff", sortKeyFields: ["date"])
+
+  date: AWSDate!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+
+  staff: Staff @belongsTo(fields: ["staffID"])
+}
+
+type Reservation
+  @model
+  @auth(rules: [
+    # Admin は全操作OK
+    { allow: groups, groups: ["Admin"], operations: [create, update, delete, read] },
+    # owner フィールドがログイン中ユーザーの場合のみ CRUD可能
+    { allow: owner, ownerField: "owner", operations: [create, update, delete, read] }
+  ]) {
+  id: ID!
+  staffID: ID!
+  staffID_date: ID! @index(name: "byStaffInReservation", sortKeyFields: ["date"])
+
+  date: AWSDate!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  clientName: String!
+
+  # 予約のオーナー（一般ユーザー）が誰かを区別
+  owner: String
+
+  staff: Staff @belongsTo(fields: ["staffID"])
+}
