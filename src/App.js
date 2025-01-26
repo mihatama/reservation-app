@@ -141,23 +141,23 @@ function App({ signOut, user }) {
 
 /**
  * withAuthenticator 設定
+ * - usernameAlias: 'email' で「サインイン画面からUsername欄を消す」
  * - signUpAttributes でサインアップ時に取得する属性を指定
  * - formFields で各フォームフィールドを日本語ラベルにする
  */
 const AppWithAuth = withAuthenticator(App, {
-  variation: 'modal', // ログイン画面をモーダルで表示
-  // 1) Cognitoで取り扱うユーザー属性を指定 (標準 + カスタム)
-  //    ここで指定した属性がサインアップ画面に表示される
+  variation: 'modal',             // ログイン画面をモーダルで表示
+  usernameAlias: 'email',         // サインインIDをメールアドレスのみに
+  
   signUpAttributes: [
-    'email',            // メールアドレス (ID扱い)
-    'family_name',      // 姓
-    'given_name',       // 名
-    'custom:furiganaFamily', // フリガナ(姓)
-    'custom:furiganaGiven',  // フリガナ(名)
-    // 必要に応じて phone_number など追加
+    'email',                      // メールアドレス(=サインインID)
+    'family_name',                // 姓
+    'given_name',                 // 名
+    'custom:furiganaFamily',      // フリガナ(姓)
+    'custom:furiganaGiven',       // フリガナ(名)
+    // 必要に応じて 'custom:phone' など電話番号属性も追加可
   ],
 
-  // 2) 実際のラベルやプレースホルダを上書き
   formFields: {
     signUp: {
       email: {
@@ -185,6 +185,11 @@ const AppWithAuth = withAuthenticator(App, {
         placeholder: '例）タロウ',
         required: true,
       },
+      'custom:phone': {
+        label: '電話番号',
+        placeholder: '例）090-1234-5678',
+        required: true,
+      },
       password: {
         label: 'パスワード',
         placeholder: 'パスワードを入力',
@@ -199,7 +204,9 @@ const AppWithAuth = withAuthenticator(App, {
   },
 });
 
-// Amplify UI の ThemeProvider で全体を包む
+/**
+ * Amplify UI の ThemeProvider で全体を包む
+ */
 function AppWrapper() {
   return (
     <AmplifyThemeProvider theme={amplifyTheme}>
