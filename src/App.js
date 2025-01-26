@@ -117,6 +117,11 @@ function App({ signOut, user }) {
         <Container sx={{ mt: 4 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="textSecondary">
+              {/* 
+                Cognito 上は "username" というプロパティにメールアドレスが入る 
+                もし "USERNAME" という文言を消したいなら↓を編集:
+                例) 'ログイン中: ' + (user?.attributes?.email || '')
+              */}
               ログイン中: {user?.username} {isAdmin ? '(管理者)' : '(一般ユーザー)'}
             </Typography>
           </Box>
@@ -140,7 +145,6 @@ function App({ signOut, user }) {
 }
 
 
-
 const AppWithAuth = withAuthenticator(App, {
   variation: 'modal',             // ログイン画面をモーダルで表示
   usernameAlias: 'email',         // サインインIDをメールアドレスのみに
@@ -151,7 +155,6 @@ const AppWithAuth = withAuthenticator(App, {
     'given_name',                 // 名
     'custom:furiganaFamily',      // フリガナ(姓)
     'custom:furiganaGiven',       // フリガナ(名)
-    // 必要に応じて 'custom:phone' など電話番号属性も追加可
   ],
 
   formFields: {
