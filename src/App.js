@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 // Amplify関連
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
-import { fetchAuthSession } from '@aws-amplify/auth'; 
+import { fetchAuthSession } from '@aws-amplify/auth';
 
 // Amplify UI
 import { withAuthenticator, ThemeProvider as AmplifyThemeProvider } from '@aws-amplify/ui-react';
@@ -63,28 +63,12 @@ function App({ signOut, user }) {
     checkAdminGroup();
   }, []);
 
-  // 「Admin」グループかどうかをチェック
+  // 「Admin」グループかどうかをチェック (Access トークン側を参照)
   const checkAdminGroup = async () => {
     try {
       const session = await fetchAuthSession();
-  
-      // 取得した session 全体をまずコンソールに出してみる
-      console.log('=== Cognito Session ===', session);
-  
-      // IDトークン / Accessトークン それぞれの payload を出力してみる
-      console.log('=== session.idToken.payload ===', session.idToken?.payload);
-      console.log('=== session.accessToken.payload ===', session.accessToken?.payload);
-  
-      // IDトークン側のグループを取得してみる
-      const groupsFromIdToken = session.idToken?.payload?.['cognito:groups'] || [];
-      console.log('=== Groups from ID token ===', groupsFromIdToken);
-  
-      // Accessトークン側のグループを取得してみる
-      const groupsFromAccessToken = session.accessToken?.payload?.['cognito:groups'] || [];
-      console.log('=== Groups from Access token ===', groupsFromAccessToken);
-  
-      // 実際に isAdmin をセットするときは IDトークン・Accessトークンのどちらかを利用
-      if (groupsFromIdToken.includes('Admin') || groupsFromAccessToken.includes('Admin')) {
+      const groups = session.tokens.accessToken?.payload?.['cognito:groups'] || [];
+      if (groups.includes('Admin')) {
         setIsAdmin(true);
       }
     } catch (error) {
