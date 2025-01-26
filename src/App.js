@@ -139,12 +139,8 @@ function App({ signOut, user }) {
   );
 }
 
-/**
- * withAuthenticator 設定
- * - usernameAlias: 'email' で「サインイン画面からUsername欄を消す」
- * - signUpAttributes でサインアップ時に取得する属性を指定
- * - formFields で各フォームフィールドを日本語ラベルにする
- */
+
+
 const AppWithAuth = withAuthenticator(App, {
   variation: 'modal',             // ログイン画面をモーダルで表示
   usernameAlias: 'email',         // サインインIDをメールアドレスのみに
