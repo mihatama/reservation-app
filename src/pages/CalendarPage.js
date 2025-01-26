@@ -1,4 +1,3 @@
-// src/pages/CalendarPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
@@ -11,7 +10,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import ja from 'date-fns/locale/ja';
 
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, Container } from '@mui/material';
 import dayjs from 'dayjs';
 
 const locales = {
@@ -48,7 +47,7 @@ export default function CalendarPage() {
     setShifts(allShifts);
   };
 
-  // react-big-calendar 用配列
+  // react-big-calendar 用のevents配列
   const events = shifts.map((shift) => {
     const start = new Date(shift.startTime);
     const end = new Date(shift.endTime);
@@ -71,7 +70,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         カレンダー表示
       </Typography>
@@ -79,7 +78,7 @@ export default function CalendarPage() {
         <Typography variant="subtitle1">
           スタッフのシフト一覧をカレンダーで表示
         </Typography>
-        <div style={{ height: '700px', marginTop: '20px' }}>
+        <Box style={{ height: '700px', marginTop: '20px' }}>
           <Calendar
             localizer={localizer}
             events={events}
@@ -89,8 +88,8 @@ export default function CalendarPage() {
             defaultView="week"
             onSelectEvent={onEventSelected}
           />
-        </div>
+        </Box>
       </Paper>
-    </Box>
+    </Container>
   );
 }

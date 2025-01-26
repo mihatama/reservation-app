@@ -1,4 +1,3 @@
-// src/pages/StaffShiftPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
@@ -11,14 +10,15 @@ import {
   Paper,
   Grid,
   List,
-  ListItem,
+  ListItemButton,
   ListItemText,
   TableContainer,
   Table,
   TableHead,
   TableRow,
   TableCell,
-  TableBody
+  TableBody,
+  Container
 } from '@mui/material';
 
 // Material UI Pickers
@@ -124,7 +124,7 @@ export default function StaffShiftPage() {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         スタッフ管理（管理者専用）
       </Typography>
@@ -150,14 +150,13 @@ export default function StaffShiftPage() {
             <Typography variant="subtitle1">スタッフ一覧</Typography>
             <List>
               {staffList.map((staff) => (
-                <ListItem
-                  button
+                <ListItemButton
                   key={staff.id}
                   selected={selectedStaff?.id === staff.id}
                   onClick={() => setSelectedStaff(staff)}
                 >
                   <ListItemText primary={staff.name} />
-                </ListItem>
+                </ListItemButton>
               ))}
             </List>
           </Paper>
@@ -230,6 +229,6 @@ export default function StaffShiftPage() {
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+    </Container>
   );
 }

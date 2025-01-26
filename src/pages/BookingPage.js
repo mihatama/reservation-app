@@ -1,4 +1,3 @@
-// src/pages/BookingPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift, Reservation } from '../models';
@@ -13,7 +12,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableBody
+  TableBody,
+  Container
 } from '@mui/material';
 
 import dayjs from 'dayjs';
@@ -23,7 +23,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
-// v6 では Auth は存在しないため、ユーザー sub を取得したい場合は:
 import { fetchAuthSession } from '@aws-amplify/auth';
 
 export default function BookingPage() {
@@ -42,7 +41,6 @@ export default function BookingPage() {
   const getUserSub = async () => {
     try {
       const session = await fetchAuthSession();
-      // idToken.payload.sub にユーザーの sub が入る
       const sub = session.idToken?.payload?.sub;
       setUserSub(sub || '');
     } catch (err) {
@@ -102,10 +100,11 @@ export default function BookingPage() {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         予約画面
       </Typography>
+
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           予約入力
@@ -179,8 +178,12 @@ export default function BookingPage() {
                   .map((shift) => (
                     <TableRow key={shift.id}>
                       <TableCell>{shift.date}</TableCell>
-                      <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
-                      <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
+                      <TableCell>
+                        {dayjs(shift.startTime).format('HH:mm')}
+                      </TableCell>
+                      <TableCell>
+                        {dayjs(shift.endTime).format('HH:mm')}
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -196,6 +199,6 @@ export default function BookingPage() {
           </TableContainer>
         )}
       </Paper>
-    </Box>
+    </Container>
   );
 }
