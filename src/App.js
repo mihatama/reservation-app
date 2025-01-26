@@ -4,16 +4,10 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 // Amplify関連
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
-
-// v6 Amplify では Auth は直接使わず、fetchAuthSession をインポート
 import { fetchAuthSession } from '@aws-amplify/auth'; 
 
 // Amplify UI
-import {
-  withAuthenticator,
-  AmplifyProvider,
-  Authenticator,
-} from '@aws-amplify/ui-react';
+import { withAuthenticator, ThemeProvider as AmplifyThemeProvider } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 // ページコンポーネント
@@ -22,7 +16,7 @@ import BookingPage from './pages/BookingPage';
 import CalendarPage from './pages/CalendarPage';
 
 // Material UI
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -43,22 +37,17 @@ const muiTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: [
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
+    fontFamily: ['"Helvetica Neue"', 'Arial', 'sans-serif'].join(','),
   },
 });
 
-// Amplify UIテーマ
+// Amplify UIテーマ（お好みで拡張）
 const amplifyTheme = {
   name: 'custom-amplify-theme',
   tokens: {
     colors: {
       brand: {
         primary: {
-          // いずれもサンプルです。お好みで変更してください。
           '10': '#e3f2fd',
           '80': '#1976d2',
         },
@@ -78,7 +67,7 @@ function App({ signOut, user }) {
   const checkAdminGroup = async () => {
     try {
       const session = await fetchAuthSession();
-      // ★ 修正ポイント：IDトークン側を参照
+      // ★ CognitoグループはIDトークン側にあることが多い
       const groups = session.idToken?.payload?.['cognito:groups'] || [];
       if (groups.includes('Admin')) {
         setIsAdmin(true);
@@ -89,7 +78,7 @@ function App({ signOut, user }) {
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <MuiThemeProvider theme={muiTheme}>
       <Router>
         <AppBar position="static">
           <Toolbar>
@@ -117,7 +106,6 @@ function App({ signOut, user }) {
           </Toolbar>
         </AppBar>
 
-        {/* コンテンツ部分を Container で囲んで余白をとる */}
         <Container sx={{ mt: 4 }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="textSecondary">
@@ -132,30 +120,28 @@ function App({ signOut, user }) {
             */}
             <Route
               path="/"
-              element={
-                isAdmin ? <StaffShiftPage /> : <Navigate to="/booking" />
-              }
+              element={isAdmin ? <StaffShiftPage /> : <Navigate to="/booking" />}
             />
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
           </Routes>
         </Container>
       </Router>
-    </ThemeProvider>
+    </MuiThemeProvider>
   );
 }
 
 // withAuthenticator の第2引数で variation や他のオプションを指定
 const AppWithAuth = withAuthenticator(App, {
-  variation: 'modal', // ログイン画面をモーダルで表示させる例
+  variation: 'modal', // ログイン画面をモーダル表示させる例
 });
 
-// AmplifyProvider で包んで Amplify UI のテーマを適用
+// Amplify UI の ThemeProvider で全体を包む
 function AppWrapper() {
   return (
-    <AmplifyProvider theme={amplifyTheme}>
+    <AmplifyThemeProvider theme={amplifyTheme}>
       <AppWithAuth />
-    </AmplifyProvider>
+    </AmplifyThemeProvider>
   );
 }
 
