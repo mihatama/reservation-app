@@ -4,7 +4,9 @@ import { Staff, Shift } from '../models';
 
 // 注意: Storage ではなく個別関数 uploadData, getUrl をインポート
 import { uploadData, getUrl } from '@aws-amplify/storage';
-
+import { Amplify } from 'aws-amplify';
+import awsExports from './aws-exports';
+Amplify.configure(awsExports);
 import {
   TextField,
   Button,
