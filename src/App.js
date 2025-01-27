@@ -142,15 +142,12 @@ function App() {
       // ログインセッションを取得
       const session = await fetchAuthSession();
 
-      // session 全体を出力
-      console.log(session);
-
-      // Access Token の中身を個別出力（必要に応じて確認用）
-      console.log('session.accessToken.payload = ', session.accessToken?.payload);
+      // session 全体を出力（デバッグ用途）
+      console.log('fetchAuthSession result:', session);
 
       // グループを IDトークン から取得
       const groups = session.idToken?.payload?.['cognito:groups'] || [];
-      console.log(groups);
+      console.log('cognito:groups from ID Token:', groups);
       setUserGroups(groups);
 
       // ユーザー名（ここでは email を表示）
