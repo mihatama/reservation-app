@@ -54,24 +54,24 @@ export default function BookingPage() {
     }
   };
 
+  // スタッフ一覧は初回に購読（または取得）しておく
   useEffect(() => {
-    fetchStaff();
+    const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
+      setStaffList(items);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
-  const fetchStaff = async () => {
-    const staff = await DataStore.query(Staff);
-    setStaffList(staff);
-  };
-
+  // 選択したスタッフと日付に基づき、シフトを取得
   const fetchShifts = async () => {
     if (!selectedStaff || !selectedDate) {
       alert('スタッフと日付を指定してください。');
       return;
     }
-
     const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
 
+    // staffID_date でフィルタした上で、さらに date が一致するものを選別
     const allShifts = await DataStore.query(Shift, (s) =>
       s.staffID_date.eq(staffIDDate)
     );
@@ -97,7 +97,7 @@ export default function BookingPage() {
           endTime: shift.endTime,
           // 予約者名としてユーザーのフルネームを自動セット
           clientName: userFullName,
-          // 予約のオーナーを設定 (schemaに owner がある場合)
+          // 予約のオーナーを設定 (schema に owner がある場合のみ活用)
           owner: userSub
         })
       );
@@ -119,8 +119,6 @@ export default function BookingPage() {
           予約入力
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          {/* お客様名の入力は不要になったので削除 */}
-          
           <select
             style={{ minWidth: '150px', padding: '8px' }}
             value={selectedStaff?.id || ''}

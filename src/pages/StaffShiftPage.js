@@ -39,31 +39,27 @@ export default function StaffShiftPage() {
 
   const [shiftList, setShiftList] = useState([]);
 
+  // スタッフ一覧をリアルタイム購読
   useEffect(() => {
-    fetchStaffList();
+    const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
+      setStaffList(items);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Staff を選んだら、その Staff のシフト一覧を随時監視
+  // 選択中スタッフのシフト一覧をリアルタイム購読
   useEffect(() => {
     if (!selectedStaff) {
       setShiftList([]);
       return;
     }
-    const subscription = DataStore.observeQuery(Shift).subscribe((snapshot) => {
-      const allShifts = snapshot.items;
-      const filtered = allShifts.filter(
-        (shift) => shift.staffID === selectedStaff.id
-      );
-      setShiftList(filtered);
+    const subscription = DataStore.observeQuery(Shift, (s) =>
+      s.staffID.eq(selectedStaff.id)
+    ).subscribe(({ items }) => {
+      setShiftList(items);
     });
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
-
-  // スタッフ一覧を取得
-  const fetchStaffList = async () => {
-    const staff = await DataStore.query(Staff);
-    setStaffList(staff);
-  };
 
   // スタッフを新規登録 (名前入力 → ボタン押下)
   const createStaff = async () => {
@@ -73,7 +69,6 @@ export default function StaffShiftPage() {
     }
     await DataStore.save(new Staff({ name: staffName }));
     setStaffName('');
-    fetchStaffList();
   };
 
   // シフトを新規登録

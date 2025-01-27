@@ -29,25 +29,27 @@ export default function CalendarPage() {
   const [shifts, setShifts] = useState([]);
   const [staffMap, setStaffMap] = useState({});
 
+  // Staff と Shift をリアルタイム購読し、カレンダーに表示
   useEffect(() => {
-    fetchData();
+    const staffSub = DataStore.observeQuery(Staff).subscribe(({ items }) => {
+      const map = {};
+      items.forEach((staff) => {
+        map[staff.id] = staff.name;
+      });
+      setStaffMap(map);
+    });
+
+    const shiftSub = DataStore.observeQuery(Shift).subscribe(({ items }) => {
+      setShifts(items);
+    });
+
+    return () => {
+      staffSub.unsubscribe();
+      shiftSub.unsubscribe();
+    };
   }, []);
 
-  const fetchData = async () => {
-    // Staff 一覧を取得
-    const staffList = await DataStore.query(Staff);
-    const map = {};
-    staffList.forEach((staff) => {
-      map[staff.id] = staff.name;
-    });
-    setStaffMap(map);
-
-    // Shift 一覧を取得
-    const allShifts = await DataStore.query(Shift);
-    setShifts(allShifts);
-  };
-
-  // react-big-calendar 用のevents配列
+  // react-big-calendar 用の events 配列
   const events = shifts.map((shift) => {
     const start = new Date(shift.startTime);
     const end = new Date(shift.endTime);

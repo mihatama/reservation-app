@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
 
-// ここを修正: Auth オブジェクトは使えないので分割インポートにする
+// Auth 関連（分割インポート）
 import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 
 // Amplify UI
@@ -90,7 +90,7 @@ function App() {
       setUserGroups(groups);
 
       // ユーザー名（ここでは email を表示）
-      const currentUsername = session.idToken?.payload?.email || ''; 
+      const currentUsername = session.idToken?.payload?.email || '';
       setUsername(currentUsername);
 
       setIsAuthenticated(true);
