@@ -1,10 +1,4 @@
 import React, { useEffect, useState } from 'react'; 
-import { Amplify } from 'aws-amplify';
-import awsExports from './aws-exports';
-
-// Amplify を必ず初期化
-Amplify.configure(awsExports);
-
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
