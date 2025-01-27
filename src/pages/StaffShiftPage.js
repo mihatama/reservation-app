@@ -142,13 +142,24 @@ export default function StaffShiftPage() {
 
     // ③ DataStoreにスタッフ登録
     try {
-      await DataStore.save(
+      const savedStaff = await DataStore.save(
         new Staff({
           name: staffName,
           photo: photoKey,
         })
       );
       console.log('Staff created in DataStore');
+
+      // 新しく作ったスタッフをスタッフ一覧に即時反映しつつ選択できるようにする
+      let staffPhotoURL = '';
+      if (photoKey) {
+        staffPhotoURL = await getUrl({ key: photoKey, level: 'public' });
+      }
+      const newStaff = { ...savedStaff, photoURL: staffPhotoURL };
+
+      setStaffList((prev) => [...prev, newStaff]);
+      setSelectedStaff(newStaff);
+
     } catch (err) {
       console.error('DataStore save error:', err);
       alert('スタッフの登録に失敗しました');
@@ -279,9 +290,7 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    secondary={
-                      staff.photoURL ? '写真あり' : '写真なし'
-                    }
+                    secondary={staff.photoURL ? '写真あり' : '写真なし'}
                   />
                 </ListItemButton>
               ))}
