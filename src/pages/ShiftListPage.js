@@ -11,8 +11,8 @@ import {
   Container
 } from '@mui/material';
 
-// S3キーからURL取得用
-import { getUrl } from '@aws-amplify/storage';
+// 修正: ここを `aws-amplify` から Storage をimport
+import { Storage } from 'aws-amplify';
 
 export default function ShiftListPage() {
   const [staffList, setStaffList] = useState([]);
@@ -21,12 +21,13 @@ export default function ShiftListPage() {
   useEffect(() => {
     // スタッフ一覧を購読
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // 各スタッフの photo(=S3キー) から実際に表示可能なURLを取得
+      // 各スタッフの photo(=S3キー) から表示可能なURLを取得
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({ key: staff.photo });
+              // Storage.get でキーからURLを取得
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch {
               // 取得失敗時はプレースホルダ

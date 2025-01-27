@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
@@ -26,8 +27,10 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-// S3アップロード・URL取得用
-import { uploadData, getUrl } from '@aws-amplify/storage';
+// ここを修正: `@aws-amplify/storage` ではなく `aws-amplify` から Storage をimport
+import { Storage } from 'aws-amplify';
+
+import placeholder from '../assets/placeholder.png';
 
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
@@ -54,7 +57,6 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // Storage.get でキーからURLを取得
               const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
@@ -79,12 +81,12 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
     ).subscribe(async ({ items }) => {
-      // シフト写真についてもURL取得
+      // シフトに紐づいた photo についてもURL取得
       const shiftWithUrls = await Promise.all(
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await getUrl({ key: shift.photo });
+              const url = await Storage.get(shift.photo, { level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -109,12 +111,13 @@ export default function StaffShiftPage() {
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        // アップロード
+        // Storage.put でファイルをアップロード
         const uploadResult = await Storage.put(fileName, staffPhotoFile, {
           contentType: staffPhotoFile.type,
-          level: 'public', // 必要に応じて変更
+          level: 'public',
         });
-        photoKey = uploadResult.key; // => これが S3 に保存されたファイルキー
+        // putの戻り値には `key` が入る
+        photoKey = uploadResult.key;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -163,7 +166,7 @@ export default function StaffShiftPage() {
     // staffID_date = "{スタッフID}_{日付}"
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
 
-    // シフトの写真は、登録時のスタッフ写真を使用する
+    // シフトの写真は、登録時のスタッフ写真を使う
     const shiftPhotoKey = selectedStaff.photo || '';
 
     // シフト保存
@@ -174,7 +177,7 @@ export default function StaffShiftPage() {
         date: dateStr,
         startTime: startISO,
         endTime: endISO,
-        photo: shiftPhotoKey, // スタッフ登録時のS3キーを利用
+        photo: shiftPhotoKey, // S3キー
         details: shiftDetail,
       })
     );
@@ -213,7 +216,7 @@ export default function StaffShiftPage() {
                 accept="image/*"
                 type="file"
                 onChange={(e) => {
-                  if (e.target.files[0]) {
+                  if (e.target.files && e.target.files[0]) {
                     setStaffPhotoFile(e.target.files[0]);
                   }
                 }}
@@ -299,8 +302,6 @@ export default function StaffShiftPage() {
                     />
                   </Grid>
                 </Grid>
-
-                {/* シフト写真アップロードは不要のため削除 */}
 
                 <Grid container sx={{ mt: 2 }}>
                   <Grid item>

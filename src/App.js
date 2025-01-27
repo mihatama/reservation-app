@@ -11,7 +11,7 @@ import {
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
 
-// Auth 関連（分割インポート）
+// Auth 関連
 import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 
 // Amplify UI
@@ -24,9 +24,9 @@ import '@aws-amplify/ui-react/styles.css';
 // ページコンポーネント
 import StaffShiftPage from './pages/StaffShiftPage';
 import BookingPage from './pages/BookingPage';
-import ShiftListPage from './pages/ShiftListPage'; // トップページをスタッフ一覧に変更
-import StaffCalendarPage from './pages/StaffCalendarPage'; // スタッフごとのカレンダー表示
-import MyReservationsPage from './pages/MyReservationsPage'; // ログインユーザーの予約一覧
+import ShiftListPage from './pages/ShiftListPage'; 
+import StaffCalendarPage from './pages/StaffCalendarPage';
+import MyReservationsPage from './pages/MyReservationsPage';
 
 // Material UI
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
@@ -39,7 +39,7 @@ import { Box, Container } from '@mui/material';
 // Amplify初期化
 Amplify.configure(awsconfig);
 
-// MUIのテーマ設定（青色→ピンクに変更）
+// MUIのテーマ設定
 const muiTheme = createTheme({
   palette: {
     primary: {
@@ -69,14 +69,12 @@ const amplifyTheme = {
   },
 };
 
-// ログイン画面（★ユーザー登録画面を拡張）
+// ログイン画面
 function LoginPage() {
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
       <Authenticator
-        // サインアップ時に要求する標準属性
         signUpAttributes={['family_name', 'given_name', 'phone_number']}
-        // 各フィールドのラベルやプレースホルダなどをカスタマイズ
         formFields={{
           signUp: {
             family_name: {
@@ -89,14 +87,12 @@ function LoginPage() {
               placeholder: '例）太郎',
               order: 2,
             },
-            // カスタム属性（Cognito側で custom:family_name_kana を作成済みとする）
             'custom:family_name_kana': {
               label: '姓（フリガナ）',
               placeholder: '例）ヤマダ',
               order: 3,
               isRequired: false,
             },
-            // カスタム属性（Cognito側で custom:given_name_kana を作成済みとする）
             'custom:given_name_kana': {
               label: '名（フリガナ）',
               placeholder: '例）タロウ',
@@ -107,7 +103,7 @@ function LoginPage() {
               label: '日本の電話番号',
               placeholder: '例）+81XXXXXXXXXX',
               order: 5,
-              dialCode: '+81', // デフォルトで日本(+81)
+              dialCode: '+81',
             },
             email: {
               order: 6,
@@ -130,9 +126,6 @@ function App() {
   const [username, setUsername] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 管理者フラグ (Adminグループに属するかどうか)
-  const isAdmin = userGroups.includes('Admin');
-  console.log(isAdmin)
   useEffect(() => {
     checkCurrentUser();
   }, []);
@@ -141,11 +134,8 @@ function App() {
     try {
       // ログインセッションを取得
       const session = await fetchAuthSession();
-
-
       // グループを IDトークン から取得
       const groups = session.tokens.idToken.payload['cognito:groups'] || [];
-
       setUserGroups(groups);
 
       // ユーザー名（ここでは email を表示）
@@ -155,7 +145,6 @@ function App() {
       setIsAuthenticated(true);
     } catch (error) {
       // 未ログインの場合
-      console.log('checkCurrentUser error:', error);
       setIsAuthenticated(false);
       setUserGroups([]);
       setUsername(null);
@@ -173,6 +162,8 @@ function App() {
     }
   };
 
+  const isAdmin = userGroups.includes('Admin');
+
   return (
     <AmplifyThemeProvider theme={amplifyTheme}>
       <MuiThemeProvider theme={muiTheme}>
@@ -183,7 +174,6 @@ function App() {
                 助産院 予約管理アプリ
               </Typography>
 
-              {/* メニューボタン */}
               <Button color="inherit" component={Link} to="/">
                 シフト一覧
               </Button>
@@ -192,21 +182,18 @@ function App() {
                 予約
               </Button>
 
-              {/* Adminのみ「スタッフ管理」ボタン表示 */}
               {isAdmin && (
                 <Button color="inherit" component={Link} to="/staff-shift">
                   スタッフ管理
                 </Button>
               )}
 
-              {/* ログイン済なら「マイ予約」を表示 */}
               {isAuthenticated && (
                 <Button color="inherit" component={Link} to="/my-reservations">
                   マイ予約
                 </Button>
               )}
 
-              {/* ログイン状態で切り替え */}
               {isAuthenticated ? (
                 <Button color="inherit" onClick={handleSignOut}>
                   サインアウト
@@ -237,7 +224,7 @@ function App() {
               {/* シフト一覧ページ（トップ） */}
               <Route path="/" element={<ShiftListPage />} />
 
-              {/* スタッフ別カレンダー: ログイン必須 */}
+              {/* スタッフ別カレンダー */}
               <Route
                 path="/calendar/:staffId"
                 element={
@@ -249,7 +236,7 @@ function App() {
                 }
               />
 
-              {/* 予約ページ: ログイン必須 => 未ログインなら /login へ */}
+              {/* 予約ページ */}
               <Route
                 path="/booking"
                 element={
@@ -257,7 +244,7 @@ function App() {
                 }
               />
 
-              {/* スタッフ管理ページ: Adminのみ => それ以外はトップへ */}
+              {/* スタッフ管理ページ (Adminのみ) */}
               <Route
                 path="/staff-shift"
                 element={
@@ -265,7 +252,7 @@ function App() {
                 }
               />
 
-              {/* マイ予約確認ページ: ログイン必須 */}
+              {/* マイ予約確認ページ */}
               <Route
                 path="/my-reservations"
                 element={
