@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'; 
+import { Amplify } from 'aws-amplify';
+import awsExports from './aws-exports';
+
+// Amplify を必ず初期化
+Amplify.configure(awsExports);
+
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
 // 注意: Storage ではなく個別関数 uploadData, getUrl をインポート
 import { uploadData, getUrl } from '@aws-amplify/storage';
-import { Amplify } from 'aws-amplify';
-import awsExports from './aws-exports';
-Amplify.configure(awsExports);
+
 import {
   TextField,
   Button,
@@ -45,7 +49,9 @@ export default function StaffShiftPage() {
 
   const [shiftList, setShiftList] = useState([]);
 
+  // ----------------------------------------
   // スタッフ一覧を購読
+  // ----------------------------------------
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
       console.log('[StaffShiftPage] Staff items fetched:', items);
@@ -72,12 +78,15 @@ export default function StaffShiftPage() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // ----------------------------------------
   // 選択したスタッフのシフト一覧を購読
+  // ----------------------------------------
   useEffect(() => {
     if (!selectedStaff) {
       setShiftList([]);
       return;
     }
+
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
     ).subscribe(async ({ items }) => {
@@ -102,7 +111,9 @@ export default function StaffShiftPage() {
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
+  // ----------------------------------------
   // スタッフを追加
+  // ----------------------------------------
   const createStaff = async () => {
     console.log('[createStaff] Button clicked!');
     console.log('Staff name:', staffName);
@@ -155,6 +166,26 @@ export default function StaffShiftPage() {
       );
       console.log('Staff created in DataStore:', savedStaff);
 
+      // 【ポイント】登録直後に「手動で DataStore.query」して最新の一覧を再取得
+      const allStaff = await DataStore.query(Staff);
+      // 取得したスタッフ一覧の photoURL を改めてまとめて取得
+      const staffWithPhotoUrls = await Promise.all(
+        allStaff.map(async (staff) => {
+          if (staff.photo) {
+            try {
+              const url = await getUrl({ key: staff.photo, level: 'public' });
+              return { ...staff, photoURL: url };
+            } catch (err) {
+              console.error('写真URL取得エラー:', err);
+              return { ...staff, photoURL: '' };
+            }
+          }
+          return { ...staff, photoURL: '' };
+        })
+      );
+      // これでローカルのスタッフ一覧を再更新
+      setStaffList(staffWithPhotoUrls);
+
       // 新規登録したスタッフをすぐ選択状態にする
       setSelectedStaff(savedStaff);
 
@@ -169,7 +200,9 @@ export default function StaffShiftPage() {
     }
   };
 
+  // ----------------------------------------
   // シフトを追加
+  // ----------------------------------------
   const createShift = async () => {
     console.log('[createShift] Button clicked!');
     if (!selectedStaff) {
