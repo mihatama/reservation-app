@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// ここを修正: Storage ではなく個別関数
+// ここを修正: Storage ではなく個別関数 uploadData, getUrl をインポート
 import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
@@ -48,12 +48,12 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
       console.log('[StaffShiftPage] Staff items fetched:', items);
 
-      // S3キーを持つスタッフの写真URLを取得
+      // staff.photo からURLを取得
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // getUrl({ key, level, ... }) でダウンロードURLを取得
+              // getUrl({ key, level }) でS3のダウンロードURLを取得
               const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
@@ -66,7 +66,6 @@ export default function StaffShiftPage() {
       );
       setStaffList(staffWithPhotoUrls);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -81,7 +80,6 @@ export default function StaffShiftPage() {
     ).subscribe(async ({ items }) => {
       console.log('[StaffShiftPage] Shift items fetched for staff:', selectedStaff.id, items);
 
-      // シフトの photo を使って写真URL取得
       const shiftWithUrls = await Promise.all(
         items.map(async (shift) => {
           if (shift.photo) {
@@ -97,7 +95,6 @@ export default function StaffShiftPage() {
       );
       setShiftList(shiftWithUrls);
     });
-
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
@@ -115,20 +112,23 @@ export default function StaffShiftPage() {
     let photoKey = '';
     if (staffPhotoFile) {
       try {
-        // S3に保存するファイル名を作成
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
         console.log('Uploading file to S3 with key:', fileName);
 
-        // uploadData({...}) でアップロード
-        const { key } = await uploadData({
+        // uploadDataでアップロード
+        // ※ 戻り値に key が入っていない場合があるため、fileName をそのまま使う
+        const response = await uploadData({
           key: fileName,
           body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        photoKey = key;
+        console.log('Upload result:', response);
 
-        console.log('Upload success. photoKey:', photoKey);
+        // 返り値に key が無い or undefined でも問題ないように、自分でセット
+        photoKey = fileName; 
+        console.log('Final photoKey:', photoKey);
+
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -136,12 +136,12 @@ export default function StaffShiftPage() {
       }
     }
 
-    // DataStoreにスタッフを保存
+    // DataStoreにスタッフ保存
     try {
       await DataStore.save(
         new Staff({
           name: staffName,
-          photo: photoKey,
+          photo: photoKey, // S3キー
         })
       );
       console.log('Staff created in DataStore');
@@ -186,9 +186,8 @@ export default function StaffShiftPage() {
     const startISO = start.toISOString();
     const endISO = end.toISOString();
 
-    // Shiftモデルで使うフィールド
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-    // シフトの写真はスタッフ登録時のphotoを流用
+    // シフトにはスタッフの photo をそのまま使う
     const shiftPhotoKey = selectedStaff.photo || '';
 
     try {
@@ -211,7 +210,6 @@ export default function StaffShiftPage() {
       return;
     }
 
-    // フォームクリア
     setShiftDate(null);
     setStartTime(null);
     setEndTime(null);
@@ -276,7 +274,9 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    secondary={staff.photoURL ? '写真あり' : '写真なし'}
+                    secondary={
+                      staff.photoURL ? '写真あり' : '写真なし'
+                    }
                   />
                 </ListItemButton>
               ))}
@@ -359,12 +359,8 @@ export default function StaffShiftPage() {
                         .map((shift) => (
                           <TableRow key={shift.id}>
                             <TableCell>{shift.date}</TableCell>
-                            <TableCell>
-                              {dayjs(shift.startTime).format('HH:mm')}
-                            </TableCell>
-                            <TableCell>
-                              {dayjs(shift.endTime).format('HH:mm')}
-                            </TableCell>
+                            <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
+                            <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
                             <TableCell>{shift.details || ''}</TableCell>
                             <TableCell>
                               {shift.photoURL ? (
