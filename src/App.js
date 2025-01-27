@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useNavigate,
+} from 'react-router-dom';
 
 // Amplify関連
 import { Amplify } from 'aws-amplify';
@@ -11,14 +18,16 @@ import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 // Amplify UI
 import {
   Authenticator,
-  ThemeProvider as AmplifyThemeProvider
+  ThemeProvider as AmplifyThemeProvider,
 } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 // ページコンポーネント
 import StaffShiftPage from './pages/StaffShiftPage';
 import BookingPage from './pages/BookingPage';
-import CalendarPage from './pages/CalendarPage';
+import ShiftListPage from './pages/ShiftListPage'; // トップページをスタッフ一覧に変更
+import StaffCalendarPage from './pages/StaffCalendarPage'; // スタッフごとのカレンダー表示
+import MyReservationsPage from './pages/MyReservationsPage'; // ログインユーザーの予約一覧
 
 // Material UI
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
@@ -86,7 +95,8 @@ function App() {
     try {
       // ログインセッションを取得
       const session = await fetchAuthSession();
-      const groups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
+      const groups =
+        session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
       setUserGroups(groups);
 
       // ユーザー名（ここでは email を表示）
@@ -95,7 +105,7 @@ function App() {
 
       setIsAuthenticated(true);
     } catch (error) {
-      // 未ログインの場合はここにくる
+      // 未ログインの場合
       setIsAuthenticated(false);
       setUserGroups([]);
       setUsername(null);
@@ -104,7 +114,6 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      // Auth.signOut() は使えないので、分割インポートした signOut() を呼び出す
       await signOut();
       setIsAuthenticated(false);
       setUsername(null);
@@ -126,15 +135,30 @@ function App() {
 
               {/* メニューボタン */}
               <Button color="inherit" component={Link} to="/">
-                カレンダー
+                シフト一覧
               </Button>
+
+              {/* カレンダーはスタッフ別ページに変更したのでメニューからは削除
+                  あるいは総合カレンダーを残す場合はコメント外す */}
+              {/* <Button color="inherit" component={Link} to="/calendar">
+                カレンダー
+              </Button> */}
+
               <Button color="inherit" component={Link} to="/booking">
                 予約
               </Button>
+
               {/* Adminのみ「スタッフ管理」ボタン表示 */}
               {isAdmin && (
                 <Button color="inherit" component={Link} to="/staff-shift">
                   スタッフ管理
+                </Button>
+              )}
+
+              {/* ログイン済なら「マイ予約」を表示 */}
+              {isAuthenticated && (
+                <Button color="inherit" component={Link} to="/my-reservations">
+                  マイ予約
                 </Button>
               )}
 
@@ -166,8 +190,20 @@ function App() {
             </Box>
 
             <Routes>
-              {/* カレンダーページ: ログイン不要 */}
-              <Route path="/" element={<CalendarPage />} />
+              {/* シフト一覧ページ（トップ） */}
+              <Route path="/" element={<ShiftListPage />} />
+
+              {/* スタッフ別カレンダー: ログイン必須 */}
+              <Route
+                path="/calendar/:staffId"
+                element={
+                  isAuthenticated ? (
+                    <StaffCalendarPage />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
 
               {/* 予約ページ: ログイン必須 => 未ログインなら /login へ */}
               <Route
@@ -185,8 +221,21 @@ function App() {
                 }
               />
 
+              {/* マイ予約確認ページ: ログイン必須 */}
+              <Route
+                path="/my-reservations"
+                element={
+                  isAuthenticated ? (
+                    <MyReservationsPage />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+
               {/* ログインページ */}
               <Route path="/login" element={<LoginPage />} />
+
             </Routes>
           </Container>
         </Router>

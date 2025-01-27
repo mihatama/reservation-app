@@ -6,7 +6,6 @@ import {
   TextField,
   Button,
   Typography,
-  Box,
   Paper,
   Grid,
   List,
@@ -27,15 +26,24 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
+// 写真アップロード用 (Amplify Storage)
+import { uploadData } from '@aws-amplify/storage';
+
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
+  // スタッフ写真関連
+  const [staffPhotoFile, setStaffPhotoFile] = useState(null);
+
   // シフト登録用
   const [shiftDate, setShiftDate] = useState(null); // dayjs
   const [startTime, setStartTime] = useState(null); // dayjs
   const [endTime, setEndTime] = useState(null);     // dayjs
+
+  const [shiftDetail, setShiftDetail] = useState('');
+  const [photoFile, setPhotoFile] = useState(null); // シフトごとの写真（既存機能）
 
   const [shiftList, setShiftList] = useState([]);
 
@@ -61,14 +69,36 @@ export default function StaffShiftPage() {
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
-  // スタッフを新規登録 (名前入力 → ボタン押下)
+  // スタッフを新規登録
   const createStaff = async () => {
     if (!staffName.trim()) {
       alert('スタッフ名を入力してください。');
       return;
     }
-    await DataStore.save(new Staff({ name: staffName }));
+
+    let photoKey = '';
+    if (staffPhotoFile) {
+      try {
+        const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
+        const uploadResult = await uploadData(fileName, staffPhotoFile, {
+          contentType: staffPhotoFile.type,
+        });
+        photoKey = uploadResult.key;
+      } catch (err) {
+        console.error('スタッフ写真のアップロードエラー:', err);
+        alert('スタッフ写真のアップロードに失敗しました。');
+        return;
+      }
+    }
+
+    await DataStore.save(
+      new Staff({
+        name: staffName,
+        photo: photoKey, // スタッフ写真のキーを保存
+      })
+    );
     setStaffName('');
+    setStaffPhotoFile(null);
   };
 
   // シフトを新規登録
@@ -102,6 +132,23 @@ export default function StaffShiftPage() {
     // staffID_date = "{スタッフID}_{日付}"
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
 
+    // シフト写真アップロード（あれば）
+    let shiftPhotoKey = '';
+    if (photoFile) {
+      try {
+        const fileName = `shift-photos/${Date.now()}_${photoFile.name}`;
+        const uploadResult = await uploadData(fileName, photoFile, {
+          contentType: photoFile.type,
+        });
+        shiftPhotoKey = uploadResult.key;
+      } catch (err) {
+        console.error('シフト写真アップロードエラー:', err);
+        alert('シフト写真のアップロードに失敗しました。');
+        return;
+      }
+    }
+
+    // シフト保存
     await DataStore.save(
       new Shift({
         staffID: selectedStaff.id,
@@ -109,13 +156,18 @@ export default function StaffShiftPage() {
         date: dateStr,
         startTime: startISO,
         endTime: endISO,
+        photo: shiftPhotoKey, // シフト用写真
+        details: shiftDetail, 
       })
     );
 
     alert('シフトを追加しました。');
+    // フォームクリア
     setShiftDate(null);
     setStartTime(null);
     setEndTime(null);
+    setShiftDetail('');
+    setPhotoFile(null);
   };
 
   return (
@@ -124,18 +176,42 @@ export default function StaffShiftPage() {
         スタッフ管理（管理者専用）
       </Typography>
 
+      {/* スタッフ登録 */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle1">スタッフ登録</Typography>
-        <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-          <TextField
-            label="スタッフ名"
-            value={staffName}
-            onChange={(e) => setStaffName(e.target.value)}
-          />
-          <Button variant="contained" onClick={createStaff}>
-            追加
-          </Button>
-        </Box>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              label="スタッフ名"
+              value={staffName}
+              onChange={(e) => setStaffName(e.target.value)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Button variant="contained" component="label" fullWidth>
+              写真を選択
+              <input
+                hidden
+                accept="image/*"
+                type="file"
+                onChange={(e) => {
+                  if (e.target.files[0]) {
+                    setStaffPhotoFile(e.target.files[0]);
+                  }
+                }}
+              />
+            </Button>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {staffPhotoFile ? `選択中: ${staffPhotoFile.name}` : 'ファイル未選択'}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Button variant="contained" onClick={createStaff} fullWidth>
+              スタッフ追加
+            </Button>
+          </Grid>
+        </Grid>
       </Paper>
 
       <Grid container spacing={2}>
@@ -164,27 +240,74 @@ export default function StaffShiftPage() {
             {selectedStaff ? (
               <>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-                    <DatePicker
-                      label="日付"
-                      value={shiftDate}
-                      onChange={(newValue) => setShiftDate(newValue)}
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item>
+                      <DatePicker
+                        label="日付"
+                        value={shiftDate}
+                        onChange={(newValue) => setShiftDate(newValue)}
+                      />
+                    </Grid>
+                    <Grid item>
+                      <TimePicker
+                        label="開始時刻"
+                        value={startTime}
+                        onChange={(newValue) => setStartTime(newValue)}
+                      />
+                    </Grid>
+                    <Grid item>
+                      <TimePicker
+                        label="終了時刻"
+                        value={endTime}
+                        onChange={(newValue) => setEndTime(newValue)}
+                      />
+                    </Grid>
+                  </Grid>
+                </LocalizationProvider>
+
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="シフトの詳細"
+                      multiline
+                      rows={2}
+                      value={shiftDetail}
+                      onChange={(e) => setShiftDetail(e.target.value)}
+                      fullWidth
                     />
-                    <TimePicker
-                      label="開始時刻"
-                      value={startTime}
-                      onChange={(newValue) => setStartTime(newValue)}
-                    />
-                    <TimePicker
-                      label="終了時刻"
-                      value={endTime}
-                      onChange={(newValue) => setEndTime(newValue)}
-                    />
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item>
+                    <Button variant="contained" component="label">
+                      シフト写真選択
+                      <input
+                        hidden
+                        accept="image/*"
+                        type="file"
+                        onChange={(e) => {
+                          if (e.target.files[0]) {
+                            setPhotoFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12}>
+                    {photoFile
+                      ? `選択中ファイル: ${photoFile.name}`
+                      : 'ファイル未選択'}
+                  </Grid>
+                </Grid>
+
+                <Grid container sx={{ mt: 2 }}>
+                  <Grid item>
                     <Button variant="contained" onClick={createShift}>
                       シフト追加
                     </Button>
-                  </Box>
-                </LocalizationProvider>
+                  </Grid>
+                </Grid>
 
                 <Typography variant="subtitle2" sx={{ mt: 4, mb: 1 }}>
                   {selectedStaff.name} さんのシフト一覧
@@ -196,6 +319,8 @@ export default function StaffShiftPage() {
                         <TableCell>日付</TableCell>
                         <TableCell>開始</TableCell>
                         <TableCell>終了</TableCell>
+                        <TableCell>詳細</TableCell>
+                        <TableCell>写真</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -209,6 +334,18 @@ export default function StaffShiftPage() {
                             </TableCell>
                             <TableCell>
                               {dayjs(shift.endTime).format('HH:mm')}
+                            </TableCell>
+                            <TableCell>{shift.details || ''}</TableCell>
+                            <TableCell>
+                              {shift.photo ? (
+                                <img
+                                  src={shift.photo}
+                                  alt="シフト写真"
+                                  style={{ width: '80px', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                'なし'
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift, Reservation } from '../models';
 import {
@@ -32,7 +32,6 @@ export default function BookingPage() {
 
   const [userSub, setUserSub] = useState('');
   const [userFullName, setUserFullName] = useState(''); 
-  // ↑ ログイン中ユーザーの「姓 + 名」を格納する
 
   // ログインユーザーの情報を取得
   useEffect(() => {
@@ -54,7 +53,7 @@ export default function BookingPage() {
     }
   };
 
-  // スタッフ一覧は初回に購読（または取得）しておく
+  // スタッフ一覧は初回に購読
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
       setStaffList(items);
@@ -71,7 +70,6 @@ export default function BookingPage() {
     const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
 
-    // staffID_date でフィルタした上で、さらに date が一致するものを選別
     const allShifts = await DataStore.query(Shift, (s) =>
       s.staffID_date.eq(staffIDDate)
     );
@@ -80,9 +78,8 @@ export default function BookingPage() {
   };
 
   const createReservation = async (shift) => {
-    // ログインしていない場合は弾く
     if (!userSub) {
-      alert('予約にはログインが必要です。ログインしてください。');
+      alert('予約にはログインが必要です。');
       return;
     }
 
@@ -95,10 +92,8 @@ export default function BookingPage() {
           date: shift.date,
           startTime: shift.startTime,
           endTime: shift.endTime,
-          // 予約者名としてユーザーのフルネームを自動セット
           clientName: userFullName,
-          // 予約のオーナーを設定 (schema に owner がある場合のみ活用)
-          owner: userSub
+          owner: userSub,
         })
       );
       alert('予約が完了しました。');
