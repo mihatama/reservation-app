@@ -141,20 +141,21 @@ function App() {
     try {
       // ログインセッションを取得
       const session = await fetchAuthSession();
-  
-      // ID Token の中身
+
+      // session 全体を出力
       console.log(session);
-  
-      // Access Token の中身
+
+      // Access Token の中身を個別出力（必要に応じて確認用）
       console.log('session.accessToken.payload = ', session.accessToken?.payload);
-  
-      // 以下、既存のコードと同様にグループを取得
+
+      // グループを IDトークン から取得
       const groups = session.idToken?.payload?.['cognito:groups'] || [];
       setUserGroups(groups);
-  
+
+      // ユーザー名（ここでは email を表示）
       const currentUsername = session.idToken?.payload?.email || '';
       setUsername(currentUsername);
-  
+
       setIsAuthenticated(true);
     } catch (error) {
       // 未ログインの場合
