@@ -54,9 +54,11 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({ key: staff.photo });
+              // Storage.get でキーからURLを取得
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
-            } catch {
+            } catch (err) {
+              console.error('写真URL取得エラー:', err);
               return { ...staff, photoURL: '' };
             }
           }
@@ -108,11 +110,11 @@ export default function StaffShiftPage() {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
         // アップロード
-        const uploadResult = await uploadData(fileName, staffPhotoFile, {
+        const uploadResult = await Storage.put(fileName, staffPhotoFile, {
           contentType: staffPhotoFile.type,
+          level: 'public', // 必要に応じて変更
         });
-        // 戻り値に key が含まれる
-        photoKey = uploadResult.key;
+        photoKey = uploadResult.key; // => これが S3 に保存されたファイルキー
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
