@@ -141,10 +141,13 @@ function App() {
     try {
       // ログインセッションを取得
       const session = await fetchAuthSession();
-      const groups =
-        session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
+      // const groups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
+      const groups = session.idToken?.payload?.['cognito:groups'] || [];
       setUserGroups(groups);
+      
 
+      console.log('ID Token groups =', session.idToken?.payload?.['cognito:groups']);
+      console.log('Access Token groups =', session.accessToken?.payload?.['cognito:groups']);
       // ユーザー名（ここでは email を表示）
       const currentUsername = session.idToken?.payload?.email || '';
       setUsername(currentUsername);
