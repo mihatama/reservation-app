@@ -26,9 +26,8 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-// ここを修正: 'Storage' ではなく、必要な関数を個別にインポート
-import { uploadData, getUrl } from '@aws-amplify/storage';
-// ↑ put/get は存在しないが、代わりに uploadData/getUrl がある
+// Amplify Storage (修正)
+import { Storage } from 'aws-amplify';
 
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
@@ -52,7 +51,7 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({ key: staff.photo, level: 'public' });
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -80,7 +79,7 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await getUrl({ key: shift.photo, level: 'public' });
+              const url = await Storage.get(shift.photo, { level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -96,6 +95,10 @@ export default function StaffShiftPage() {
 
   // スタッフを追加
   const createStaff = async () => {
+    console.log('[createStaff] function called');
+    console.log('Staff name:', staffName);
+    console.log('Staff photo file:', staffPhotoFile);
+
     if (!staffName.trim()) {
       alert('スタッフ名を入力してください');
       return;
@@ -105,14 +108,13 @@ export default function StaffShiftPage() {
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        // uploadData( { key, body, contentType, level } )
-        const { key } = await uploadData({
-          key: fileName,
-          body: staffPhotoFile,
+        console.log('Uploading file to S3:', fileName);
+        const result = await Storage.put(fileName, staffPhotoFile, {
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        photoKey = key; // S3に保存されたキー
+        console.log('Upload success result:', result);
+        photoKey = result.key;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -121,12 +123,20 @@ export default function StaffShiftPage() {
     }
 
     // DataStore へ保存
-    await DataStore.save(
-      new Staff({
-        name: staffName,
-        photo: photoKey, // S3キー
-      })
-    );
+    try {
+      console.log('Saving Staff to DataStore...');
+      await DataStore.save(
+        new Staff({
+          name: staffName,
+          photo: photoKey, // S3キー
+        })
+      );
+      console.log('Staff saved successfully');
+    } catch (saveErr) {
+      console.error('スタッフ保存エラー:', saveErr);
+      alert('スタッフ登録に失敗しました。');
+      return;
+    }
 
     // 入力リセット
     setStaffName('');
@@ -135,6 +145,10 @@ export default function StaffShiftPage() {
 
   // シフトを追加
   const createShift = async () => {
+    console.log('[createShift] function called');
+    console.log('selectedStaff:', selectedStaff);
+    console.log('shiftDate:', shiftDate, 'startTime:', startTime, 'endTime:', endTime, 'detail:', shiftDetail);
+
     if (!selectedStaff) {
       alert('スタッフを選択してください');
       return;
@@ -163,23 +177,29 @@ export default function StaffShiftPage() {
     const endISO = end.toISOString();
 
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-
     // シフトの写真はスタッフ登録時の photoKey を使う
     const shiftPhotoKey = selectedStaff.photo || '';
 
-    await DataStore.save(
-      new Shift({
-        staffID: selectedStaff.id,
-        staffID_date: staffID_dateValue,
-        date: dateStr,
-        startTime: startISO,
-        endTime: endISO,
-        photo: shiftPhotoKey,
-        details: shiftDetail,
-      })
-    );
+    try {
+      console.log('Saving Shift to DataStore...');
+      await DataStore.save(
+        new Shift({
+          staffID: selectedStaff.id,
+          staffID_date: staffID_dateValue,
+          date: dateStr,
+          startTime: startISO,
+          endTime: endISO,
+          photo: shiftPhotoKey,
+          details: shiftDetail,
+        })
+      );
+      alert('シフトを追加しました。');
+      console.log('Shift saved successfully');
+    } catch (err) {
+      console.error('シフト保存エラー:', err);
+      alert('シフト登録に失敗しました。');
+    }
 
-    alert('シフトを追加しました。');
     // フォームクリア
     setShiftDate(null);
     setStartTime(null);

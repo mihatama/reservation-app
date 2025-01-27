@@ -24,7 +24,7 @@ import '@aws-amplify/ui-react/styles.css';
 // ページコンポーネント
 import StaffShiftPage from './pages/StaffShiftPage';
 import BookingPage from './pages/BookingPage';
-import ShiftListPage from './pages/ShiftListPage'; 
+import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
 

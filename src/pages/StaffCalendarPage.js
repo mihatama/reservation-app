@@ -17,6 +17,9 @@ import dayjs from 'dayjs';
 // Auth
 import { fetchAuthSession } from '@aws-amplify/auth';
 
+// Storage (もし写真URL取得が必要な場合ここで使う)
+import { Storage } from 'aws-amplify'; // 今回は未使用かもしれません
+
 const locales = {
   ja: ja,
 };
@@ -80,7 +83,7 @@ export default function StaffCalendarPage() {
     };
   });
 
-  // シフトクリック => 予約確認ダイアログ（簡易実装）
+  // シフトクリック => 予約
   const handleSelectEvent = async (event) => {
     if (!userSub) {
       alert('ログインが必要です。');

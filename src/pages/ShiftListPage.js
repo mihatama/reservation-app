@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// ここを修正: 'Storage' ではなく、必要な関数を個別にインポート
-import { getUrl } from '@aws-amplify/storage';
+// Amplify Storage (修正)
+import { Storage } from 'aws-amplify';
 
 import {
   Box,
@@ -13,8 +13,8 @@ import {
   Container
 } from '@mui/material';
 
-// 画像が存在しないとき用のダミー画像を使いたいなら定義する
-import placeholder from '../assets/placeholder.png'; 
+// 画像が存在しないとき用のダミー画像
+import placeholder from '../assets/placeholder.png';
 
 export default function ShiftListPage() {
   const [staffList, setStaffList] = useState([]);
@@ -22,18 +22,16 @@ export default function ShiftListPage() {
 
   useEffect(() => {
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // staff.photo が S3キーの場合、URLを取得して staff.photoURL に格納する
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({ key: staff.photo, level: 'public' });
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch {
               return { ...staff, photoURL: placeholder };
             }
           } else {
-            // photoキーが無いなら placeholder を使う
             return { ...staff, photoURL: placeholder };
           }
         })
@@ -45,7 +43,6 @@ export default function ShiftListPage() {
   }, []);
 
   const handleRowClick = (staffId) => {
-    // クリックしたスタッフのカレンダーへ飛ばす
     navigate(`/calendar/${staffId}`);
   };
 
@@ -76,10 +73,9 @@ export default function ShiftListPage() {
             }}
             onClick={() => handleRowClick(staff.id)}
           >
-            {/* 写真表示 */}
             <Box
               component="img"
-              src={staff.photoURL}  // getUrl で取得したURL or placeholder
+              src={staff.photoURL}
               alt={staff.name}
               sx={{
                 width: 80,
@@ -89,7 +85,6 @@ export default function ShiftListPage() {
                 mr: 2,
               }}
             />
-            {/* 名前など */}
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6">{staff.name}</Typography>
               <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
