@@ -146,7 +146,7 @@ function App() {
       console.log('fetchAuthSession result:', session);
 
       // グループを IDトークン から取得
-      const groups = session.idToken?.payload?.['cognito:groups'] || [];
+      const groups = session.tokens.idToken.payload['cognito:groups'] || [];
       console.log('cognito:groups from ID Token:', groups);
       setUserGroups(groups);
 
