@@ -4,10 +4,10 @@ import { schema } from './schema';
 
 
 
-const { Staff, Shift, Reservation } = initSchema(schema);
+const { Todo, Staff, Shift } = initSchema(schema);
 
 export {
+  Todo,
   Staff,
-  Shift,
-  Reservation
+  Shift
 };

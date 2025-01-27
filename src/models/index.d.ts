@@ -1,10 +1,40 @@
 import { ModelInit, MutableModel, __modelMeta__, ManagedIdentifier } from "@aws-amplify/datastore";
 // @ts-ignore
-import { LazyLoading, LazyLoadingDisabled, AsyncCollection, AsyncItem } from "@aws-amplify/datastore";
+import { LazyLoading, LazyLoadingDisabled } from "@aws-amplify/datastore";
 
 
 
 
+
+type EagerTodo = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Todo, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+type LazyTodo = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Todo, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+export declare type Todo = LazyLoading extends LazyLoadingDisabled ? EagerTodo : LazyTodo
+
+export declare const Todo: (new (init: ModelInit<Todo>) => Todo) & {
+  copyOf(source: Todo, mutator: (draft: MutableModel<Todo>) => MutableModel<Todo> | void): Todo;
+}
 
 type EagerStaff = {
   readonly [__modelMeta__]: {
@@ -13,8 +43,7 @@ type EagerStaff = {
   };
   readonly id: string;
   readonly name: string;
-  readonly shifts?: (Shift | null)[] | null;
-  readonly reservations?: (Reservation | null)[] | null;
+  readonly photo?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -26,8 +55,7 @@ type LazyStaff = {
   };
   readonly id: string;
   readonly name: string;
-  readonly shifts: AsyncCollection<Shift>;
-  readonly reservations: AsyncCollection<Reservation>;
+  readonly photo?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -45,11 +73,12 @@ type EagerShift = {
   };
   readonly id: string;
   readonly staffID: string;
-  readonly staffID_date: string;
-  readonly date: string;
-  readonly startTime: string;
-  readonly endTime: string;
-  readonly staff?: Staff | null;
+  readonly staffID_date?: string | null;
+  readonly date?: string | null;
+  readonly startTime?: string | null;
+  readonly endTime?: string | null;
+  readonly photo?: string | null;
+  readonly details?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -61,11 +90,12 @@ type LazyShift = {
   };
   readonly id: string;
   readonly staffID: string;
-  readonly staffID_date: string;
-  readonly date: string;
-  readonly startTime: string;
-  readonly endTime: string;
-  readonly staff: AsyncItem<Staff | undefined>;
+  readonly staffID_date?: string | null;
+  readonly date?: string | null;
+  readonly startTime?: string | null;
+  readonly endTime?: string | null;
+  readonly photo?: string | null;
+  readonly details?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -74,44 +104,4 @@ export declare type Shift = LazyLoading extends LazyLoadingDisabled ? EagerShift
 
 export declare const Shift: (new (init: ModelInit<Shift>) => Shift) & {
   copyOf(source: Shift, mutator: (draft: MutableModel<Shift>) => MutableModel<Shift> | void): Shift;
-}
-
-type EagerReservation = {
-  readonly [__modelMeta__]: {
-    identifier: ManagedIdentifier<Reservation, 'id'>;
-    readOnlyFields: 'createdAt' | 'updatedAt';
-  };
-  readonly id: string;
-  readonly staffID: string;
-  readonly staffID_date: string;
-  readonly date: string;
-  readonly startTime: string;
-  readonly endTime: string;
-  readonly clientName: string;
-  readonly staff?: Staff | null;
-  readonly createdAt?: string | null;
-  readonly updatedAt?: string | null;
-}
-
-type LazyReservation = {
-  readonly [__modelMeta__]: {
-    identifier: ManagedIdentifier<Reservation, 'id'>;
-    readOnlyFields: 'createdAt' | 'updatedAt';
-  };
-  readonly id: string;
-  readonly staffID: string;
-  readonly staffID_date: string;
-  readonly date: string;
-  readonly startTime: string;
-  readonly endTime: string;
-  readonly clientName: string;
-  readonly staff: AsyncItem<Staff | undefined>;
-  readonly createdAt?: string | null;
-  readonly updatedAt?: string | null;
-}
-
-export declare type Reservation = LazyLoading extends LazyLoadingDisabled ? EagerReservation : LazyReservation
-
-export declare const Reservation: (new (init: ModelInit<Reservation>) => Reservation) & {
-  copyOf(source: Reservation, mutator: (draft: MutableModel<Reservation>) => MutableModel<Reservation> | void): Reservation;
 }
