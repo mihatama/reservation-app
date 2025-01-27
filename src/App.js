@@ -150,6 +150,7 @@ function App() {
 
       // グループを IDトークン から取得
       const groups = session.idToken?.payload?.['cognito:groups'] || [];
+      console.log(groups);
       setUserGroups(groups);
 
       // ユーザー名（ここでは email を表示）
