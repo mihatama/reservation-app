@@ -26,8 +26,8 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-// 写真アップロード用 (Amplify Storage)
-import { uploadData } from '@aws-amplify/storage';
+// S3アップロード・URL取得用
+import { uploadData, getUrl } from '@aws-amplify/storage';
 
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
@@ -43,14 +43,28 @@ export default function StaffShiftPage() {
   const [endTime, setEndTime] = useState(null);     // dayjs
 
   const [shiftDetail, setShiftDetail] = useState('');
-  const [photoFile, setPhotoFile] = useState(null); // シフトごとの写真（既存機能）
+  const [photoFile, setPhotoFile] = useState(null); // シフト用写真
 
   const [shiftList, setShiftList] = useState([]);
 
   // スタッフ一覧をリアルタイム購読
   useEffect(() => {
-    const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
-      setStaffList(items);
+    const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
+      // S3キーからURLを取得して staff.photoURL に格納
+      const staffWithPhotoUrls = await Promise.all(
+        items.map(async (staff) => {
+          if (staff.photo) {
+            try {
+              const url = await getUrl({ key: staff.photo });
+              return { ...staff, photoURL: url };
+            } catch {
+              return { ...staff, photoURL: '' };
+            }
+          }
+          return { ...staff, photoURL: '' };
+        })
+      );
+      setStaffList(staffWithPhotoUrls);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -63,8 +77,22 @@ export default function StaffShiftPage() {
     }
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
-    ).subscribe(({ items }) => {
-      setShiftList(items);
+    ).subscribe(async ({ items }) => {
+      // シフト写真についてもURL取得
+      const shiftWithUrls = await Promise.all(
+        items.map(async (shift) => {
+          if (shift.photo) {
+            try {
+              const url = await getUrl({ key: shift.photo });
+              return { ...shift, photoURL: url };
+            } catch {
+              return { ...shift, photoURL: '' };
+            }
+          }
+          return { ...shift, photoURL: '' };
+        })
+      );
+      setShiftList(shiftWithUrls);
     });
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
@@ -80,9 +108,11 @@ export default function StaffShiftPage() {
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
+        // アップロード
         const uploadResult = await uploadData(fileName, staffPhotoFile, {
           contentType: staffPhotoFile.type,
         });
+        // 戻り値に key が含まれる
         photoKey = uploadResult.key;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
@@ -94,7 +124,7 @@ export default function StaffShiftPage() {
     await DataStore.save(
       new Staff({
         name: staffName,
-        photo: photoKey, // スタッフ写真のキーを保存
+        photo: photoKey, // S3キーを保存
       })
     );
     setStaffName('');
@@ -156,8 +186,8 @@ export default function StaffShiftPage() {
         date: dateStr,
         startTime: startISO,
         endTime: endISO,
-        photo: shiftPhotoKey, // シフト用写真
-        details: shiftDetail, 
+        photo: shiftPhotoKey, // シフト用写真のS3キー
+        details: shiftDetail,
       })
     );
 
@@ -226,7 +256,12 @@ export default function StaffShiftPage() {
                   selected={selectedStaff?.id === staff.id}
                   onClick={() => setSelectedStaff(staff)}
                 >
-                  <ListItemText primary={staff.name} />
+                  <ListItemText
+                    primary={staff.name}
+                    secondary={
+                      staff.photoURL ? '写真あり' : '写真なし'
+                    }
+                  />
                 </ListItemButton>
               ))}
             </List>
@@ -337,9 +372,9 @@ export default function StaffShiftPage() {
                             </TableCell>
                             <TableCell>{shift.details || ''}</TableCell>
                             <TableCell>
-                              {shift.photo ? (
+                              {shift.photoURL ? (
                                 <img
-                                  src={shift.photo}
+                                  src={shift.photoURL}
                                   alt="シフト写真"
                                   style={{ width: '80px', objectFit: 'cover' }}
                                 />

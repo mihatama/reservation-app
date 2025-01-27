@@ -1,10 +1,9 @@
-// src/pages/ShiftListPage.js
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
-import placeholder from '../assets/placeholder.png'; // 写真がない場合のダミー画像
+import placeholder from '../assets/placeholder.png'; // ダミー画像
+
 import {
   Box,
   Typography,
@@ -12,14 +11,34 @@ import {
   Container
 } from '@mui/material';
 
+// S3キーからURL取得用
+import { getUrl } from '@aws-amplify/storage';
+
 export default function ShiftListPage() {
   const [staffList, setStaffList] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     // スタッフ一覧を購読
-    const staffSub = DataStore.observeQuery(Staff).subscribe(({ items }) => {
-      setStaffList(items);
+    const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
+      // 各スタッフの photo(=S3キー) から実際に表示可能なURLを取得
+      const staffWithUrls = await Promise.all(
+        items.map(async (staff) => {
+          if (staff.photo) {
+            try {
+              const url = await getUrl({ key: staff.photo });
+              return { ...staff, photoURL: url };
+            } catch {
+              // 取得失敗時はプレースホルダ
+              return { ...staff, photoURL: placeholder };
+            }
+          } else {
+            // photoキーがなければプレースホルダ
+            return { ...staff, photoURL: placeholder };
+          }
+        })
+      );
+      setStaffList(staffWithUrls);
     });
 
     return () => {
@@ -62,7 +81,7 @@ export default function ShiftListPage() {
             {/* 左側に写真 */}
             <Box
               component="img"
-              src={staff.photo || placeholder}
+              src={staff.photoURL || placeholder}
               alt={staff.name}
               sx={{
                 width: 80,

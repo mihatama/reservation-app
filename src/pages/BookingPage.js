@@ -31,7 +31,7 @@ export default function BookingPage() {
   const [availableShifts, setAvailableShifts] = useState([]);
 
   const [userSub, setUserSub] = useState('');
-  const [userFullName, setUserFullName] = useState(''); 
+  const [userFullName, setUserFullName] = useState('');
 
   // ログインユーザーの情報を取得
   useEffect(() => {

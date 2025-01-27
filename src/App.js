@@ -5,7 +5,6 @@ import {
   Route,
   Link,
   Navigate,
-  useNavigate,
 } from 'react-router-dom';
 
 // Amplify関連
@@ -70,11 +69,58 @@ const amplifyTheme = {
   },
 };
 
-// ログイン画面
+// ログイン画面（★ユーザー登録画面を拡張）
 function LoginPage() {
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
-      <Authenticator />
+      <Authenticator
+        // サインアップ時に要求する標準属性
+        signUpAttributes={['family_name', 'given_name', 'phone_number']}
+        // 各フィールドのラベルやプレースホルダなどをカスタマイズ
+        formFields={{
+          signUp: {
+            family_name: {
+              label: '姓',
+              placeholder: '例）山田',
+              order: 1,
+            },
+            given_name: {
+              label: '名',
+              placeholder: '例）太郎',
+              order: 2,
+            },
+            // カスタム属性（Cognito側で custom:family_name_kana を作成済みとする）
+            'custom:family_name_kana': {
+              label: '姓（フリガナ）',
+              placeholder: '例）ヤマダ',
+              order: 3,
+              isRequired: false,
+            },
+            // カスタム属性（Cognito側で custom:given_name_kana を作成済みとする）
+            'custom:given_name_kana': {
+              label: '名（フリガナ）',
+              placeholder: '例）タロウ',
+              order: 4,
+              isRequired: false,
+            },
+            phone_number: {
+              label: '日本の電話番号',
+              placeholder: '例）+81XXXXXXXXXX',
+              order: 5,
+              dialCode: '+81', // デフォルトで日本(+81)
+            },
+            email: {
+              order: 6,
+            },
+            password: {
+              order: 7,
+            },
+            confirm_password: {
+              order: 8,
+            },
+          },
+        }}
+      />
     </Box>
   );
 }
@@ -137,12 +183,6 @@ function App() {
               <Button color="inherit" component={Link} to="/">
                 シフト一覧
               </Button>
-
-              {/* カレンダーはスタッフ別ページに変更したのでメニューからは削除
-                  あるいは総合カレンダーを残す場合はコメント外す */}
-              {/* <Button color="inherit" component={Link} to="/calendar">
-                カレンダー
-              </Button> */}
 
               <Button color="inherit" component={Link} to="/booking">
                 予約
@@ -235,7 +275,6 @@ function App() {
 
               {/* ログインページ */}
               <Route path="/login" element={<LoginPage />} />
-
             </Routes>
           </Container>
         </Router>

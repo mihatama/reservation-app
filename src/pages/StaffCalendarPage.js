@@ -80,7 +80,7 @@ export default function StaffCalendarPage() {
     };
   });
 
-  // シフトクリック => 予約確認ダイアログを出すサンプル（簡易実装）
+  // シフトクリック => 予約確認ダイアログ（簡易実装）
   const handleSelectEvent = async (event) => {
     if (!userSub) {
       alert('ログインが必要です。');
@@ -136,8 +136,8 @@ export default function StaffCalendarPage() {
             startAccessor="start"
             endAccessor="end"
             style={{ height: '100%' }}
-            views={['month', 'week', 'day']} // 日/週/月 切り替え
-            defaultView={Views.WEEK} // デフォルトは週表示
+            views={['month', 'week', 'day']}
+            defaultView={Views.WEEK}
             onSelectEvent={handleSelectEvent}
           />
         </Box>
