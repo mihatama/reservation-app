@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// Amplify Storage (修正)
-import { Storage } from 'aws-amplify';
+// ここを修正: `Storage.get` ではなく個別関数
+import { getUrl } from '@aws-amplify/storage';
 
 import {
   Box,
@@ -13,7 +13,7 @@ import {
   Container
 } from '@mui/material';
 
-// 画像が存在しないとき用のダミー画像
+// 写真がない場合のダミー
 import placeholder from '../assets/placeholder.png';
 
 export default function ShiftListPage() {
@@ -22,11 +22,13 @@ export default function ShiftListPage() {
 
   useEffect(() => {
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
+      console.log('[ShiftListPage] Staff items fetched:', items);
+      // staff.photo が S3キーなら getUrl() で取得
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch {
               return { ...staff, photoURL: placeholder };
@@ -43,6 +45,7 @@ export default function ShiftListPage() {
   }, []);
 
   const handleRowClick = (staffId) => {
+    // クリックしたスタッフのカレンダーへ飛ばす
     navigate(`/calendar/${staffId}`);
   };
 

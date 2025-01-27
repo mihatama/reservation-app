@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
+// ここを修正: Storage ではなく個別関数
+import { uploadData, getUrl } from '@aws-amplify/storage';
+
 import {
   TextField,
   Button,
@@ -26,9 +29,6 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-// Amplify Storage (修正)
-import { Storage } from 'aws-amplify';
-
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
   const [staffPhotoFile, setStaffPhotoFile] = useState(null);
@@ -46,12 +46,15 @@ export default function StaffShiftPage() {
   // スタッフ一覧を購読
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // staff.photo からURLを取得
+      console.log('[StaffShiftPage] Staff items fetched:', items);
+
+      // S3キーを持つスタッフの写真URLを取得
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              // getUrl({ key, level, ... }) でダウンロードURLを取得
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -63,6 +66,7 @@ export default function StaffShiftPage() {
       );
       setStaffList(staffWithPhotoUrls);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -75,11 +79,14 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
     ).subscribe(async ({ items }) => {
+      console.log('[StaffShiftPage] Shift items fetched for staff:', selectedStaff.id, items);
+
+      // シフトの photo を使って写真URL取得
       const shiftWithUrls = await Promise.all(
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await Storage.get(shift.photo, { level: 'public' });
+              const url = await getUrl({ key: shift.photo, level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -90,14 +97,15 @@ export default function StaffShiftPage() {
       );
       setShiftList(shiftWithUrls);
     });
+
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
   // スタッフを追加
   const createStaff = async () => {
-    console.log('[createStaff] function called');
+    console.log('[createStaff] Button clicked!');
     console.log('Staff name:', staffName);
-    console.log('Staff photo file:', staffPhotoFile);
+    console.log('Photo file:', staffPhotoFile);
 
     if (!staffName.trim()) {
       alert('スタッフ名を入力してください');
@@ -107,14 +115,20 @@ export default function StaffShiftPage() {
     let photoKey = '';
     if (staffPhotoFile) {
       try {
+        // S3に保存するファイル名を作成
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        console.log('Uploading file to S3:', fileName);
-        const result = await Storage.put(fileName, staffPhotoFile, {
+        console.log('Uploading file to S3 with key:', fileName);
+
+        // uploadData({...}) でアップロード
+        const { key } = await uploadData({
+          key: fileName,
+          body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        console.log('Upload success result:', result);
-        photoKey = result.key;
+        photoKey = key;
+
+        console.log('Upload success. photoKey:', photoKey);
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -122,33 +136,29 @@ export default function StaffShiftPage() {
       }
     }
 
-    // DataStore へ保存
+    // DataStoreにスタッフを保存
     try {
-      console.log('Saving Staff to DataStore...');
       await DataStore.save(
         new Staff({
           name: staffName,
-          photo: photoKey, // S3キー
+          photo: photoKey,
         })
       );
-      console.log('Staff saved successfully');
-    } catch (saveErr) {
-      console.error('スタッフ保存エラー:', saveErr);
-      alert('スタッフ登録に失敗しました。');
+      console.log('Staff created in DataStore');
+    } catch (err) {
+      console.error('DataStore save error:', err);
+      alert('スタッフの登録に失敗しました');
       return;
     }
 
-    // 入力リセット
     setStaffName('');
     setStaffPhotoFile(null);
+    alert('スタッフを追加しました。');
   };
 
   // シフトを追加
   const createShift = async () => {
-    console.log('[createShift] function called');
-    console.log('selectedStaff:', selectedStaff);
-    console.log('shiftDate:', shiftDate, 'startTime:', startTime, 'endTime:', endTime, 'detail:', shiftDetail);
-
+    console.log('[createShift] Button clicked!');
     if (!selectedStaff) {
       alert('スタッフを選択してください');
       return;
@@ -176,12 +186,12 @@ export default function StaffShiftPage() {
     const startISO = start.toISOString();
     const endISO = end.toISOString();
 
+    // Shiftモデルで使うフィールド
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-    // シフトの写真はスタッフ登録時の photoKey を使う
+    // シフトの写真はスタッフ登録時のphotoを流用
     const shiftPhotoKey = selectedStaff.photo || '';
 
     try {
-      console.log('Saving Shift to DataStore...');
       await DataStore.save(
         new Shift({
           staffID: selectedStaff.id,
@@ -194,10 +204,11 @@ export default function StaffShiftPage() {
         })
       );
       alert('シフトを追加しました。');
-      console.log('Shift saved successfully');
+      console.log('Shift created in DataStore');
     } catch (err) {
-      console.error('シフト保存エラー:', err);
+      console.error('シフト追加エラー:', err);
       alert('シフト登録に失敗しました。');
+      return;
     }
 
     // フォームクリア
@@ -265,9 +276,7 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    secondary={
-                      staff.photoURL ? '写真あり' : '写真なし'
-                    }
+                    secondary={staff.photoURL ? '写真あり' : '写真なし'}
                   />
                 </ListItemButton>
               ))}
@@ -350,8 +359,12 @@ export default function StaffShiftPage() {
                         .map((shift) => (
                           <TableRow key={shift.id}>
                             <TableCell>{shift.date}</TableCell>
-                            <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
-                            <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
+                            <TableCell>
+                              {dayjs(shift.startTime).format('HH:mm')}
+                            </TableCell>
+                            <TableCell>
+                              {dayjs(shift.endTime).format('HH:mm')}
+                            </TableCell>
                             <TableCell>{shift.details || ''}</TableCell>
                             <TableCell>
                               {shift.photoURL ? (
