@@ -7,3 +7,20 @@ type Todo @model {
   name: String!
   description: String
 }
+
+type Staff @model {
+  id: ID!
+  name: String!
+  photo: String
+}
+
+type Shift @model {
+  id: ID!
+  staffID: ID!
+  staffID_date: String
+  date: String
+  startTime: String
+  endTime: String
+  photo: String
+  details: String
+}

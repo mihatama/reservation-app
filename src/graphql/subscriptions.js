@@ -37,3 +37,90 @@ export const onDeleteTodo = /* GraphQL */ `
     }
   }
 `;
+export const onCreateStaff = /* GraphQL */ `
+  subscription OnCreateStaff($filter: ModelSubscriptionStaffFilterInput) {
+    onCreateStaff(filter: $filter) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateStaff = /* GraphQL */ `
+  subscription OnUpdateStaff($filter: ModelSubscriptionStaffFilterInput) {
+    onUpdateStaff(filter: $filter) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteStaff = /* GraphQL */ `
+  subscription OnDeleteStaff($filter: ModelSubscriptionStaffFilterInput) {
+    onDeleteStaff(filter: $filter) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onCreateShift = /* GraphQL */ `
+  subscription OnCreateShift($filter: ModelSubscriptionShiftFilterInput) {
+    onCreateShift(filter: $filter) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateShift = /* GraphQL */ `
+  subscription OnUpdateShift($filter: ModelSubscriptionShiftFilterInput) {
+    onUpdateShift(filter: $filter) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteShift = /* GraphQL */ `
+  subscription OnDeleteShift($filter: ModelSubscriptionShiftFilterInput) {
+    onDeleteShift(filter: $filter) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;

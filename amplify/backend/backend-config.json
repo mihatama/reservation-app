@@ -18,7 +18,7 @@
     }
   },
   "auth": {
-    "reservationappcd7d45fa": {
+    "reservationappdc4e61d0": {
       "customAuth": false,
       "dependsOn": [],
       "frontendAuthConfig": {

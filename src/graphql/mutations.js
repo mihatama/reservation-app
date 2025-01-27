@@ -46,3 +46,108 @@ export const deleteTodo = /* GraphQL */ `
     }
   }
 `;
+export const createStaff = /* GraphQL */ `
+  mutation CreateStaff(
+    $input: CreateStaffInput!
+    $condition: ModelStaffConditionInput
+  ) {
+    createStaff(input: $input, condition: $condition) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateStaff = /* GraphQL */ `
+  mutation UpdateStaff(
+    $input: UpdateStaffInput!
+    $condition: ModelStaffConditionInput
+  ) {
+    updateStaff(input: $input, condition: $condition) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteStaff = /* GraphQL */ `
+  mutation DeleteStaff(
+    $input: DeleteStaffInput!
+    $condition: ModelStaffConditionInput
+  ) {
+    deleteStaff(input: $input, condition: $condition) {
+      id
+      name
+      photo
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createShift = /* GraphQL */ `
+  mutation CreateShift(
+    $input: CreateShiftInput!
+    $condition: ModelShiftConditionInput
+  ) {
+    createShift(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateShift = /* GraphQL */ `
+  mutation UpdateShift(
+    $input: UpdateShiftInput!
+    $condition: ModelShiftConditionInput
+  ) {
+    updateShift(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteShift = /* GraphQL */ `
+  mutation DeleteShift(
+    $input: DeleteShiftInput!
+    $condition: ModelShiftConditionInput
+  ) {
+    deleteShift(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      photo
+      details
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;

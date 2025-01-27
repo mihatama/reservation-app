@@ -15,11 +15,11 @@
       "api": {
         "reservationapp": {}
       },
-      "auth": {
-        "reservationappcd7d45fa": {}
-      },
       "storage": {
         "s362b9d497": {}
+      },
+      "auth": {
+        "reservationappdc4e61d0": {}
       }
     }
   }
