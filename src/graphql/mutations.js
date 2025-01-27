@@ -151,3 +151,63 @@ export const deleteShift = /* GraphQL */ `
     }
   }
 `;
+export const createReservation = /* GraphQL */ `
+  mutation CreateReservation(
+    $input: CreateReservationInput!
+    $condition: ModelReservationConditionInput
+  ) {
+    createReservation(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      clientName
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateReservation = /* GraphQL */ `
+  mutation UpdateReservation(
+    $input: UpdateReservationInput!
+    $condition: ModelReservationConditionInput
+  ) {
+    updateReservation(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      clientName
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteReservation = /* GraphQL */ `
+  mutation DeleteReservation(
+    $input: DeleteReservationInput!
+    $condition: ModelReservationConditionInput
+  ) {
+    deleteReservation(input: $input, condition: $condition) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      clientName
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;

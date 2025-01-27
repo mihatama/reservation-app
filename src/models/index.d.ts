@@ -105,3 +105,43 @@ export declare type Shift = LazyLoading extends LazyLoadingDisabled ? EagerShift
 export declare const Shift: (new (init: ModelInit<Shift>) => Shift) & {
   copyOf(source: Shift, mutator: (draft: MutableModel<Shift>) => MutableModel<Shift> | void): Shift;
 }
+
+type EagerReservation = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Reservation, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly staffID: string;
+  readonly staffID_date: string;
+  readonly date: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly clientName?: string | null;
+  readonly owner?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+type LazyReservation = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Reservation, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly staffID: string;
+  readonly staffID_date: string;
+  readonly date: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly clientName?: string | null;
+  readonly owner?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+export declare type Reservation = LazyLoading extends LazyLoadingDisabled ? EagerReservation : LazyReservation
+
+export declare const Reservation: (new (init: ModelInit<Reservation>) => Reservation) & {
+  copyOf(source: Reservation, mutator: (draft: MutableModel<Reservation>) => MutableModel<Reservation> | void): Reservation;
+}

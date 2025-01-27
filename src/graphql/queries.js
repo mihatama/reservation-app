@@ -107,3 +107,45 @@ export const listShifts = /* GraphQL */ `
     }
   }
 `;
+export const getReservation = /* GraphQL */ `
+  query GetReservation($id: ID!) {
+    getReservation(id: $id) {
+      id
+      staffID
+      staffID_date
+      date
+      startTime
+      endTime
+      clientName
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listReservations = /* GraphQL */ `
+  query ListReservations(
+    $filter: ModelReservationFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listReservations(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        staffID
+        staffID_date
+        date
+        startTime
+        endTime
+        clientName
+        owner
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;

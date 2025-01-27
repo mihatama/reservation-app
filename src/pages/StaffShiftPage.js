@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
@@ -21,43 +20,39 @@ import {
   Container
 } from '@mui/material';
 
-// Material UI Pickers
+// 日付・時刻ピッカー
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-// ここを修正: `@aws-amplify/storage` ではなく `aws-amplify` から Storage をimport
-import { Storage } from 'aws-amplify';
-
-import placeholder from '../assets/placeholder.png';
+// ここを修正: 'Storage' ではなく、必要な関数を個別にインポート
+import { uploadData, getUrl } from '@aws-amplify/storage';
+// ↑ put/get は存在しないが、代わりに uploadData/getUrl がある
 
 export default function StaffShiftPage() {
   const [staffName, setStaffName] = useState('');
+  const [staffPhotoFile, setStaffPhotoFile] = useState(null);
+
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
-  // スタッフ写真関連
-  const [staffPhotoFile, setStaffPhotoFile] = useState(null);
-
-  // シフト登録用
-  const [shiftDate, setShiftDate] = useState(null); // dayjs
-  const [startTime, setStartTime] = useState(null); // dayjs
-  const [endTime, setEndTime] = useState(null);     // dayjs
+  const [shiftDate, setShiftDate] = useState(null);
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
   const [shiftDetail, setShiftDetail] = useState('');
 
-  // シフト一覧
   const [shiftList, setShiftList] = useState([]);
 
-  // スタッフ一覧をリアルタイム購読
+  // スタッフ一覧を購読
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // S3キーからURLを取得して staff.photoURL に格納
+      // staff.photo からURLを取得
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -72,7 +67,7 @@ export default function StaffShiftPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 選択中スタッフのシフト一覧をリアルタイム購読
+  // 選択したスタッフのシフト一覧を購読
   useEffect(() => {
     if (!selectedStaff) {
       setShiftList([]);
@@ -81,12 +76,11 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
     ).subscribe(async ({ items }) => {
-      // シフトに紐づいた photo についてもURL取得
       const shiftWithUrls = await Promise.all(
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await Storage.get(shift.photo, { level: 'public' });
+              const url = await getUrl({ key: shift.photo, level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -100,10 +94,10 @@ export default function StaffShiftPage() {
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
-  // スタッフを新規登録
+  // スタッフを追加
   const createStaff = async () => {
     if (!staffName.trim()) {
-      alert('スタッフ名を入力してください。');
+      alert('スタッフ名を入力してください');
       return;
     }
 
@@ -111,13 +105,14 @@ export default function StaffShiftPage() {
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        // Storage.put でファイルをアップロード
-        const uploadResult = await Storage.put(fileName, staffPhotoFile, {
+        // uploadData( { key, body, contentType, level } )
+        const { key } = await uploadData({
+          key: fileName,
+          body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        // putの戻り値には `key` が入る
-        photoKey = uploadResult.key;
+        photoKey = key; // S3に保存されたキー
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -125,24 +120,27 @@ export default function StaffShiftPage() {
       }
     }
 
+    // DataStore へ保存
     await DataStore.save(
       new Staff({
         name: staffName,
-        photo: photoKey, // S3キーを保存
+        photo: photoKey, // S3キー
       })
     );
+
+    // 入力リセット
     setStaffName('');
     setStaffPhotoFile(null);
   };
 
-  // シフトを新規登録
+  // シフトを追加
   const createShift = async () => {
     if (!selectedStaff) {
-      alert('スタッフを選択してください。');
+      alert('スタッフを選択してください');
       return;
     }
     if (!shiftDate || !startTime || !endTime) {
-      alert('日付と時刻をすべて入力してください。');
+      alert('日付と時刻を入力してください');
       return;
     }
 
@@ -160,16 +158,15 @@ export default function StaffShiftPage() {
       alert('終了時刻は開始時刻より後にしてください。');
       return;
     }
-    const startISO = start.toISOString();
-    const endISO   = end.toISOString();
 
-    // staffID_date = "{スタッフID}_{日付}"
+    const startISO = start.toISOString();
+    const endISO = end.toISOString();
+
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
 
-    // シフトの写真は、登録時のスタッフ写真を使う
+    // シフトの写真はスタッフ登録時の photoKey を使う
     const shiftPhotoKey = selectedStaff.photo || '';
 
-    // シフト保存
     await DataStore.save(
       new Shift({
         staffID: selectedStaff.id,
@@ -177,7 +174,7 @@ export default function StaffShiftPage() {
         date: dateStr,
         startTime: startISO,
         endTime: endISO,
-        photo: shiftPhotoKey, // S3キー
+        photo: shiftPhotoKey,
         details: shiftDetail,
       })
     );
@@ -196,7 +193,7 @@ export default function StaffShiftPage() {
         スタッフ管理（管理者専用）
       </Typography>
 
-      {/* スタッフ登録 */}
+      {/* スタッフ登録フォーム */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle1">スタッフ登録</Typography>
         <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -216,7 +213,7 @@ export default function StaffShiftPage() {
                 accept="image/*"
                 type="file"
                 onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
+                  if (e.target.files[0]) {
                     setStaffPhotoFile(e.target.files[0]);
                   }
                 }}
@@ -262,6 +259,7 @@ export default function StaffShiftPage() {
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1">シフト登録</Typography>
+
             {selectedStaff ? (
               <>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -270,21 +268,21 @@ export default function StaffShiftPage() {
                       <DatePicker
                         label="日付"
                         value={shiftDate}
-                        onChange={(newValue) => setShiftDate(newValue)}
+                        onChange={(newVal) => setShiftDate(newVal)}
                       />
                     </Grid>
                     <Grid item>
                       <TimePicker
                         label="開始時刻"
                         value={startTime}
-                        onChange={(newValue) => setStartTime(newValue)}
+                        onChange={(newVal) => setStartTime(newVal)}
                       />
                     </Grid>
                     <Grid item>
                       <TimePicker
                         label="終了時刻"
                         value={endTime}
-                        onChange={(newValue) => setEndTime(newValue)}
+                        onChange={(newVal) => setEndTime(newVal)}
                       />
                     </Grid>
                   </Grid>
@@ -303,14 +301,15 @@ export default function StaffShiftPage() {
                   </Grid>
                 </Grid>
 
-                <Grid container sx={{ mt: 2 }}>
-                  <Grid item>
-                    <Button variant="contained" onClick={createShift}>
-                      シフト追加
-                    </Button>
-                  </Grid>
-                </Grid>
+                <Button
+                  variant="contained"
+                  onClick={createShift}
+                  sx={{ mt: 2 }}
+                >
+                  シフト追加
+                </Button>
 
+                {/* 選択スタッフのシフト一覧 */}
                 <Typography variant="subtitle2" sx={{ mt: 4, mb: 1 }}>
                   {selectedStaff.name} さんのシフト一覧
                 </Typography>
@@ -331,12 +330,8 @@ export default function StaffShiftPage() {
                         .map((shift) => (
                           <TableRow key={shift.id}>
                             <TableCell>{shift.date}</TableCell>
-                            <TableCell>
-                              {dayjs(shift.startTime).format('HH:mm')}
-                            </TableCell>
-                            <TableCell>
-                              {dayjs(shift.endTime).format('HH:mm')}
-                            </TableCell>
+                            <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
+                            <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
                             <TableCell>{shift.details || ''}</TableCell>
                             <TableCell>
                               {shift.photoURL ? (
@@ -357,7 +352,7 @@ export default function StaffShiftPage() {
               </>
             ) : (
               <Typography variant="body2" sx={{ mt: 2 }}>
-                スタッフを左の一覧から選択してください。
+                左の一覧からスタッフを選択してください。
               </Typography>
             )}
           </Paper>

@@ -24,3 +24,13 @@ type Shift @model {
   photo: String
   details: String
 }
+type Reservation @model {
+  id: ID!
+  staffID: ID!
+  staffID_date: String!
+  date: String!
+  startTime: AWSDateTime!
+  endTime: AWSDateTime!
+  clientName: String
+  owner: String
+}
