@@ -143,7 +143,7 @@ function App() {
       const session = await fetchAuthSession();
   
       // ID Token の中身
-      console.log(payload);
+      console.log(session);
   
       // Access Token の中身
       console.log('session.accessToken.payload = ', session.accessToken?.payload);
