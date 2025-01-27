@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// ここを修正: Storage ではなく個別関数 uploadData, getUrl をインポート
+// 注意: Storage ではなく個別関数 uploadData, getUrl をインポート
 import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
@@ -53,7 +53,7 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // getUrl({ key, level }) でS3のダウンロードURLを取得
+              // getUrl でS3のダウンロードURLを取得
               const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
@@ -112,20 +112,24 @@ export default function StaffShiftPage() {
     let photoKey = '';
     if (staffPhotoFile) {
       try {
+        // アップロード先を一意にするファイル名
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
         console.log('Uploading file to S3 with key:', fileName);
 
-        // uploadDataでアップロード
-        // ※ 戻り値に key が入っていない場合があるため、fileName をそのまま使う
-        const response = await uploadData({
+        // ① uploadData() 呼び出し
+        const uploadTask = uploadData({
           key: fileName,
           body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        console.log('Upload result:', response);
+        console.log('Upload started:', uploadTask);
 
-        // 返り値に key が無い or undefined でも問題ないように、自分でセット
+        // ② ここで「アップロード完了まで待つ」: uploadTask.result
+        await uploadTask.result;  
+        console.log('Upload completed!');
+
+        // 返り値には key が入らない場合があるため、自分で決めた fileName を photoKey に使う
         photoKey = fileName; 
         console.log('Final photoKey:', photoKey);
 
@@ -136,12 +140,12 @@ export default function StaffShiftPage() {
       }
     }
 
-    // DataStoreにスタッフ保存
+    // ③ DataStoreにスタッフ登録
     try {
       await DataStore.save(
         new Staff({
           name: staffName,
-          photo: photoKey, // S3キー
+          photo: photoKey,
         })
       );
       console.log('Staff created in DataStore');
@@ -151,6 +155,7 @@ export default function StaffShiftPage() {
       return;
     }
 
+    // 入力リセット
     setStaffName('');
     setStaffPhotoFile(null);
     alert('スタッフを追加しました。');
@@ -187,7 +192,7 @@ export default function StaffShiftPage() {
     const endISO = end.toISOString();
 
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-    // シフトにはスタッフの photo をそのまま使う
+    // シフトではスタッフと同じ photoKey を流用
     const shiftPhotoKey = selectedStaff.photo || '';
 
     try {
