@@ -132,7 +132,7 @@ function App() {
 
   // 管理者フラグ (Adminグループに属するかどうか)
   const isAdmin = userGroups.includes('Admin');
-
+  console.log(isAdmin)
   useEffect(() => {
     checkCurrentUser();
   }, []);
