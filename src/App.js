@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 
 // Amplify関連
-import { Amplify, Auth } from 'aws-amplify';
+import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
-import { fetchAuthSession } from '@aws-amplify/auth';
+
+// ここを修正: Auth オブジェクトは使えないので分割インポートにする
+import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 
 // Amplify UI
 import {
@@ -82,11 +84,12 @@ function App() {
 
   const checkCurrentUser = async () => {
     try {
+      // ログインセッションを取得
       const session = await fetchAuthSession();
       const groups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
       setUserGroups(groups);
 
-      // ユーザー名
+      // ユーザー名（ここでは email を表示）
       const currentUsername = session.idToken?.payload?.email || ''; 
       setUsername(currentUsername);
 
@@ -101,7 +104,8 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      await Auth.signOut();
+      // Auth.signOut() は使えないので、分割インポートした signOut() を呼び出す
+      await signOut();
       setIsAuthenticated(false);
       setUsername(null);
       setUserGroups([]);
