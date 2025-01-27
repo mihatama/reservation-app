@@ -41,10 +41,9 @@ export default function StaffShiftPage() {
   const [shiftDate, setShiftDate] = useState(null); // dayjs
   const [startTime, setStartTime] = useState(null); // dayjs
   const [endTime, setEndTime] = useState(null);     // dayjs
-
   const [shiftDetail, setShiftDetail] = useState('');
-  const [photoFile, setPhotoFile] = useState(null); // シフト用写真
 
+  // シフト一覧
   const [shiftList, setShiftList] = useState([]);
 
   // スタッフ一覧をリアルタイム購読
@@ -162,21 +161,8 @@ export default function StaffShiftPage() {
     // staffID_date = "{スタッフID}_{日付}"
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
 
-    // シフト写真アップロード（あれば）
-    let shiftPhotoKey = '';
-    if (photoFile) {
-      try {
-        const fileName = `shift-photos/${Date.now()}_${photoFile.name}`;
-        const uploadResult = await uploadData(fileName, photoFile, {
-          contentType: photoFile.type,
-        });
-        shiftPhotoKey = uploadResult.key;
-      } catch (err) {
-        console.error('シフト写真アップロードエラー:', err);
-        alert('シフト写真のアップロードに失敗しました。');
-        return;
-      }
-    }
+    // シフトの写真は、登録時のスタッフ写真を使用する
+    const shiftPhotoKey = selectedStaff.photo || '';
 
     // シフト保存
     await DataStore.save(
@@ -186,7 +172,7 @@ export default function StaffShiftPage() {
         date: dateStr,
         startTime: startISO,
         endTime: endISO,
-        photo: shiftPhotoKey, // シフト用写真のS3キー
+        photo: shiftPhotoKey, // スタッフ登録時のS3キーを利用
         details: shiftDetail,
       })
     );
@@ -197,7 +183,6 @@ export default function StaffShiftPage() {
     setStartTime(null);
     setEndTime(null);
     setShiftDetail('');
-    setPhotoFile(null);
   };
 
   return (
@@ -313,28 +298,7 @@ export default function StaffShiftPage() {
                   </Grid>
                 </Grid>
 
-                <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item>
-                    <Button variant="contained" component="label">
-                      シフト写真選択
-                      <input
-                        hidden
-                        accept="image/*"
-                        type="file"
-                        onChange={(e) => {
-                          if (e.target.files[0]) {
-                            setPhotoFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </Button>
-                  </Grid>
-                  <Grid item xs={12}>
-                    {photoFile
-                      ? `選択中ファイル: ${photoFile.name}`
-                      : 'ファイル未選択'}
-                  </Grid>
-                </Grid>
+                {/* シフト写真アップロードは不要のため削除 */}
 
                 <Grid container sx={{ mt: 2 }}>
                   <Grid item>
