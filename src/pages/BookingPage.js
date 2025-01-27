@@ -5,7 +5,6 @@ import {
   Box,
   Typography,
   Paper,
-  TextField,
   Button,
   TableContainer,
   Table,
@@ -20,7 +19,7 @@ import dayjs from 'dayjs';
 
 // Material UI Pickers
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import { fetchAuthSession } from '@aws-amplify/auth';
@@ -30,19 +29,26 @@ export default function BookingPage() {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [availableShifts, setAvailableShifts] = useState([]);
-  const [clientName, setClientName] = useState('');
-  const [userSub, setUserSub] = useState('');
 
-  // ログインユーザーの sub を取得
+  const [userSub, setUserSub] = useState('');
+  const [userFullName, setUserFullName] = useState(''); 
+  // ↑ ログイン中ユーザーの「姓 + 名」を格納する
+
+  // ログインユーザーの情報を取得
   useEffect(() => {
-    getUserSub();
+    getUserInfo();
   }, []);
 
-  const getUserSub = async () => {
+  const getUserInfo = async () => {
     try {
       const session = await fetchAuthSession();
-      const sub = session.idToken?.payload?.sub;
-      setUserSub(sub || '');
+      const sub = session.idToken?.payload?.sub || '';
+      setUserSub(sub);
+
+      // 姓・名の属性をまとめて予約名に利用
+      const familyName = session.idToken?.payload?.family_name || '';
+      const givenName = session.idToken?.payload?.given_name || '';
+      setUserFullName(`${familyName} ${givenName}`);
     } catch (err) {
       console.error('Fail to fetch session', err);
     }
@@ -74,13 +80,14 @@ export default function BookingPage() {
   };
 
   const createReservation = async (shift) => {
-    if (!clientName.trim()) {
-      alert('お客様名を入力してください。');
+    // ログインしていない場合は弾く
+    if (!userSub) {
+      alert('予約にはログインが必要です。ログインしてください。');
       return;
     }
-    const staffID_dateValue = `${shift.staffID}_${shift.date}`;
 
     try {
+      const staffID_dateValue = `${shift.staffID}_${shift.date}`;
       await DataStore.save(
         new Reservation({
           staffID: shift.staffID,
@@ -88,8 +95,10 @@ export default function BookingPage() {
           date: shift.date,
           startTime: shift.startTime,
           endTime: shift.endTime,
-          clientName: clientName,
-          owner: userSub // 予約のオーナーを設定 (schemaに owner がある場合)
+          // 予約者名としてユーザーのフルネームを自動セット
+          clientName: userFullName,
+          // 予約のオーナーを設定 (schemaに owner がある場合)
+          owner: userSub
         })
       );
       alert('予約が完了しました。');
@@ -110,34 +119,25 @@ export default function BookingPage() {
           予約入力
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <TextField
-            label="お客様名"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            size="small"
-          />
-
-          <TextField
-            select
-            label="スタッフ選択"
-            SelectProps={{ native: true }}
+          {/* お客様名の入力は不要になったので削除 */}
+          
+          <select
+            style={{ minWidth: '150px', padding: '8px' }}
             value={selectedStaff?.id || ''}
             onChange={(e) => {
               const found = staffList.find((s) => s.id === e.target.value);
               setSelectedStaff(found || null);
             }}
-            size="small"
-            sx={{ minWidth: '150px' }}
           >
             <option value="" disabled>
-              -- 選択 --
+              -- スタッフ選択 --
             </option>
             {staffList.map((staff) => (
               <option value={staff.id} key={staff.id}>
                 {staff.name}
               </option>
             ))}
-          </TextField>
+          </select>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker

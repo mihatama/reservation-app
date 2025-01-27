@@ -1,17 +1,14 @@
-/***************************************************************************
- * App.js (または App.jsx)
- ***************************************************************************/
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 
 // Amplify関連
-import { Amplify } from 'aws-amplify';
+import { Amplify, Auth } from 'aws-amplify';
 import awsconfig from './aws-exports';
 import { fetchAuthSession } from '@aws-amplify/auth';
 
 // Amplify UI
 import {
-  withAuthenticator,
+  Authenticator,
   ThemeProvider as AmplifyThemeProvider
 } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
@@ -32,11 +29,11 @@ import { Box, Container } from '@mui/material';
 // Amplify初期化
 Amplify.configure(awsconfig);
 
-// MUIのテーマ設定（必要に応じてブランドカラーなど変更）
+// MUIのテーマ設定（青色→ピンクに変更）
 const muiTheme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#e91e63', // ピンク
     },
     secondary: {
       main: '#ffa726',
@@ -47,171 +44,151 @@ const muiTheme = createTheme({
   },
 });
 
-// Amplify UIテーマ（お好みで拡張）
+// Amplify UIテーマ（青色→ピンクに変更）
 const amplifyTheme = {
   name: 'custom-amplify-theme',
   tokens: {
     colors: {
       brand: {
         primary: {
-          '10': '#e3f2fd',
-          '80': '#1976d2',
+          '10': '#fce4ec', // 薄いピンク
+          '80': '#e91e63', // メインのピンク
         },
       },
     },
   },
 };
 
-/**
- * メインアプリ
- */
-function App({ signOut, user }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+// ログイン画面
+function LoginPage() {
+  return (
+    <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
+      <Authenticator />
+    </Box>
+  );
+}
+
+function App() {
+  const [userGroups, setUserGroups] = useState([]);
+  const [username, setUsername] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // 管理者フラグ (Adminグループに属するかどうか)
+  const isAdmin = userGroups.includes('Admin');
 
   useEffect(() => {
-    checkAdminGroup();
+    checkCurrentUser();
   }, []);
 
-  // 「Admin」グループかどうかをチェック (Access トークン側を参照)
-  const checkAdminGroup = async () => {
+  const checkCurrentUser = async () => {
     try {
       const session = await fetchAuthSession();
-      const groups = session.tokens.accessToken?.payload?.['cognito:groups'] || [];
-      if (groups.includes('Admin')) {
-        setIsAdmin(true);
-      }
+      const groups = session.tokens?.accessToken?.payload?.['cognito:groups'] || [];
+      setUserGroups(groups);
+
+      // ユーザー名
+      const currentUsername = session.idToken?.payload?.email || ''; 
+      setUsername(currentUsername);
+
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Error checking user groups:', error);
+      // 未ログインの場合はここにくる
+      setIsAuthenticated(false);
+      setUserGroups([]);
+      setUsername(null);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await Auth.signOut();
+      setIsAuthenticated(false);
+      setUsername(null);
+      setUserGroups([]);
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
   return (
-    <MuiThemeProvider theme={muiTheme}>
-      <Router>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              助産院 予約管理アプリ
-            </Typography>
-
-            {/* 管理者 (isAdmin = true) の場合のみ「シフト入力」ボタンを表示 */}
-            {isAdmin && (
-              <Button color="inherit" component={Link} to="/">
-                シフト入力
-              </Button>
-            )}
-            <Button color="inherit" component={Link} to="/booking">
-              予約
-            </Button>
-            <Button color="inherit" component={Link} to="/calendar">
-              カレンダー
-            </Button>
-
-            {/* サインアウト */}
-            <Button color="inherit" onClick={signOut}>
-              サインアウト
-            </Button>
-          </Toolbar>
-        </AppBar>
-
-        <Container sx={{ mt: 4 }}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="textSecondary">
-              {/* 
-                Cognito 上は "username" というプロパティにメールアドレスが入る 
-                もし "USERNAME" という文言を消したいなら↓を編集:
-                例) 'ログイン中: ' + (user?.attributes?.email || '')
-              */}
-              ログイン中: {user?.username} {isAdmin ? '(管理者)' : '(一般ユーザー)'}
-            </Typography>
-          </Box>
-
-          <Routes>
-            {/*
-              管理者でなければ "/" (シフトページ) には行けず /booking にリダイレクト
-              管理者なら StaffShiftPage (シフト入力) を表示
-            */}
-            <Route
-              path="/"
-              element={isAdmin ? <StaffShiftPage /> : <Navigate to="/booking" />}
-            />
-            <Route path="/booking" element={<BookingPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-          </Routes>
-        </Container>
-      </Router>
-    </MuiThemeProvider>
-  );
-}
-
-
-const AppWithAuth = withAuthenticator(App, {
-  variation: 'modal',             // ログイン画面をモーダルで表示
-  usernameAlias: 'email',         // サインインIDをメールアドレスのみに
-  
-  signUpAttributes: [
-    'email',                      // メールアドレス(=サインインID)
-    'family_name',                // 姓
-    'given_name',                 // 名
-    'custom:furiganaFamily',      // フリガナ(姓)
-    'custom:furiganaGiven',       // フリガナ(名)
-  ],
-
-  formFields: {
-    signUp: {
-      email: {
-        label: 'メールアドレス',
-        placeholder: 'example@example.com',
-        required: true,
-      },
-      family_name: {
-        label: '姓',
-        placeholder: '例）山田',
-        required: true,
-      },
-      given_name: {
-        label: '名',
-        placeholder: '例）太郎',
-        required: true,
-      },
-      'custom:furiganaFamily': {
-        label: 'フリガナ(姓)',
-        placeholder: '例）ヤマダ',
-        required: true,
-      },
-      'custom:furiganaGiven': {
-        label: 'フリガナ(名)',
-        placeholder: '例）タロウ',
-        required: true,
-      },
-      'custom:phone': {
-        label: '電話番号',
-        placeholder: '例）090-1234-5678',
-        required: true,
-      },
-      password: {
-        label: 'パスワード',
-        placeholder: 'パスワードを入力',
-        required: true,
-      },
-      confirm_password: {
-        label: 'パスワード（確認）',
-        placeholder: '再度パスワードを入力',
-        required: true,
-      },
-    },
-  },
-});
-
-/**
- * Amplify UI の ThemeProvider で全体を包む
- */
-function AppWrapper() {
-  return (
     <AmplifyThemeProvider theme={amplifyTheme}>
-      <AppWithAuth />
+      <MuiThemeProvider theme={muiTheme}>
+        <Router>
+          <AppBar position="static">
+            <Toolbar>
+              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                助産院 予約管理アプリ
+              </Typography>
+
+              {/* メニューボタン */}
+              <Button color="inherit" component={Link} to="/">
+                カレンダー
+              </Button>
+              <Button color="inherit" component={Link} to="/booking">
+                予約
+              </Button>
+              {/* Adminのみ「スタッフ管理」ボタン表示 */}
+              {isAdmin && (
+                <Button color="inherit" component={Link} to="/staff-shift">
+                  スタッフ管理
+                </Button>
+              )}
+
+              {/* ログイン状態で切り替え */}
+              {isAuthenticated ? (
+                <Button color="inherit" onClick={handleSignOut}>
+                  サインアウト
+                </Button>
+              ) : (
+                <Button color="inherit" component={Link} to="/login">
+                  ログイン
+                </Button>
+              )}
+            </Toolbar>
+          </AppBar>
+
+          <Container sx={{ mt: 4 }}>
+            <Box sx={{ mb: 2 }}>
+              {isAuthenticated ? (
+                <Typography variant="body2" color="textSecondary">
+                  ログイン中: {username}{' '}
+                  {isAdmin ? '(管理者)' : '(一般ユーザー)'}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  ログインしていません
+                </Typography>
+              )}
+            </Box>
+
+            <Routes>
+              {/* カレンダーページ: ログイン不要 */}
+              <Route path="/" element={<CalendarPage />} />
+
+              {/* 予約ページ: ログイン必須 => 未ログインなら /login へ */}
+              <Route
+                path="/booking"
+                element={
+                  isAuthenticated ? <BookingPage /> : <Navigate to="/login" />
+                }
+              />
+
+              {/* スタッフ管理ページ: Adminのみ => それ以外はトップへ */}
+              <Route
+                path="/staff-shift"
+                element={
+                  isAdmin ? <StaffShiftPage /> : <Navigate to="/" />
+                }
+              />
+
+              {/* ログインページ */}
+              <Route path="/login" element={<LoginPage />} />
+            </Routes>
+          </Container>
+        </Router>
+      </MuiThemeProvider>
     </AmplifyThemeProvider>
   );
 }
 
-export default AppWrapper;
+export default App;

@@ -76,7 +76,7 @@ export default function CalendarPage() {
       </Typography>
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1">
-          スタッフのシフト一覧をカレンダーで表示
+          スタッフのシフト一覧をカレンダーで表示（ログイン不要）
         </Typography>
         <Box style={{ height: '700px', marginTop: '20px' }}>
           <Calendar
