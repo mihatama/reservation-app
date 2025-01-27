@@ -66,6 +66,7 @@ export default function StaffShiftPage() {
       );
       setStaffList(staffWithPhotoUrls);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -95,6 +96,7 @@ export default function StaffShiftPage() {
       );
       setShiftList(shiftWithUrls);
     });
+
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
@@ -125,7 +127,7 @@ export default function StaffShiftPage() {
         });
         console.log('Upload started:', uploadTask);
 
-        // ② ここで「アップロード完了まで待つ」: uploadTask.result
+        // ② アップロード完了まで待機
         await uploadTask.result;  
         console.log('Upload completed!');
 
@@ -140,36 +142,29 @@ export default function StaffShiftPage() {
       }
     }
 
-    // ③ DataStoreにスタッフ登録
+    // DataStoreにスタッフ登録
     try {
+      console.log('Saving staff with DataStore...');
       const savedStaff = await DataStore.save(
         new Staff({
           name: staffName,
           photo: photoKey,
         })
       );
-      console.log('Staff created in DataStore');
+      console.log('Staff created in DataStore:', savedStaff);
 
-      // 新しく作ったスタッフをスタッフ一覧に即時反映しつつ選択できるようにする
-      let staffPhotoURL = '';
-      if (photoKey) {
-        staffPhotoURL = await getUrl({ key: photoKey, level: 'public' });
-      }
-      const newStaff = { ...savedStaff, photoURL: staffPhotoURL };
+      // 新規登録したスタッフをすぐ選択状態にする
+      setSelectedStaff(savedStaff);
 
-      setStaffList((prev) => [...prev, newStaff]);
-      setSelectedStaff(newStaff);
+      // 入力リセット
+      setStaffName('');
+      setStaffPhotoFile(null);
+      alert('スタッフを追加しました。');
 
     } catch (err) {
       console.error('DataStore save error:', err);
       alert('スタッフの登録に失敗しました');
-      return;
     }
-
-    // 入力リセット
-    setStaffName('');
-    setStaffPhotoFile(null);
-    alert('スタッフを追加しました。');
   };
 
   // シフトを追加
