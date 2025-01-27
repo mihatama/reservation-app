@@ -1,10 +1,10 @@
 {
   "version": "1",
   "cognitoConfig": {
-    "identityPoolName": "reservationapp90dd388d_identitypool_90dd388d",
+    "identityPoolName": "reservationappd2b59127_identitypool_d2b59127",
     "allowUnauthenticatedIdentities": false,
-    "resourceNameTruncated": "reserv90dd388d",
-    "userPoolName": "reservationapp90dd388d_userpool_90dd388d",
+    "resourceNameTruncated": "reservd2b59127",
+    "userPoolName": "reservationappd2b59127_userpool_d2b59127",
     "autoVerifiedAttributes": [
       "email"
     ],
@@ -31,15 +31,16 @@
     "userpoolClientReadAttributes": [
       "email"
     ],
-    "userpoolClientLambdaRole": "reserv90dd388d_userpoolclient_lambda_role",
+    "userpoolClientLambdaRole": "reservd2b59127_userpoolclient_lambda_role",
     "userpoolClientSetAttributes": false,
-    "sharedId": "90dd388d",
-    "resourceName": "reservationapp90dd388d",
+    "sharedId": "d2b59127",
+    "resourceName": "reservationappd2b59127",
     "authSelections": "identityPoolAndUserPool",
     "useDefault": "default",
     "usernameAttributes": [
       "email"
     ],
+    "triggers": {},
     "userPoolGroupList": [],
     "serviceName": "Cognito",
     "usernameCaseSensitive": false,
