@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Reservation } from '../models';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { Auth } from 'aws-amplify';
 import dayjs from 'dayjs';
 import {
   Container,
@@ -36,8 +36,8 @@ export default function MyReservationsPage() {
 
   const getUserInfo = async () => {
     try {
-      const session = await fetchAuthSession();
-      const sub = session.idToken?.payload?.sub || '';
+      const session = await Auth.currentSession();
+      const sub = session.getIdToken().payload.sub || '';
       setUserSub(sub);
     } catch (err) {
       console.error('Fail to fetch session', err);
@@ -65,9 +65,7 @@ export default function MyReservationsPage() {
               </TableHead>
               <TableBody>
                 {reservations
-                  .sort((a, b) =>
-                    a.startTime > b.startTime ? 1 : -1
-                  )
+                  .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
                   .map((res) => (
                     <TableRow key={res.id}>
                       <TableCell>{res.date}</TableCell>

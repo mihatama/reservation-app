@@ -22,7 +22,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { Auth } from 'aws-amplify';
 
 export default function BookingPage() {
   const [staffList, setStaffList] = useState([]);
@@ -40,13 +40,13 @@ export default function BookingPage() {
 
   const getUserInfo = async () => {
     try {
-      const session = await fetchAuthSession();
-      const sub = session.idToken?.payload?.sub || '';
+      const session = await Auth.currentSession();
+      const sub = session.getIdToken().payload.sub || '';
       setUserSub(sub);
 
       // 姓・名の属性をまとめて予約名に利用
-      const familyName = session.idToken?.payload?.family_name || '';
-      const givenName = session.idToken?.payload?.given_name || '';
+      const familyName = session.getIdToken().payload.family_name || '';
+      const givenName = session.getIdToken().payload.given_name || '';
       setUserFullName(`${familyName} ${givenName}`);
     } catch (err) {
       console.error('Fail to fetch session', err);

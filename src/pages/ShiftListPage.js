@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// ★ ここを修正: 「Storage」ではなく、モジュール形式API
-import { getUrl } from '@aws-amplify/storage';
+// 修正ポイント: Storage.get を使う
+import { Storage } from 'aws-amplify';
 
 import {
   Box,
@@ -12,6 +11,8 @@ import {
   Paper,
   Container
 } from '@mui/material';
+
+import { useNavigate } from 'react-router-dom';
 
 // 写真がない場合のダミー
 import placeholder from '../assets/placeholder.png';
@@ -30,11 +31,8 @@ export default function ShiftListPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // getUrl を使ってダウンロードURLを取得
-              const url = await getUrl({
-                key: staff.photo,
-                level: 'public',
-              });
+              // Storage.get を使ってダウンロードURLを取得
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch {
               // 取得失敗時はダミー画像をセット

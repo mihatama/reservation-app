@@ -1,10 +1,9 @@
-// StaffShiftPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// ★ 重要: Storageではなく、モジュール形式のAPIを個別インポート
-import { uploadData, getUrl } from '@aws-amplify/storage';
+// 修正ポイント: Storage.put, Storage.get を使う
+import { Storage } from 'aws-amplify';
 
 import {
   TextField,
@@ -23,7 +22,8 @@ import {
   TableBody,
   Container,
   Menu,
-  MenuItem
+  MenuItem,
+  Box
 } from '@mui/material';
 
 // 日付・時刻ピッカー
@@ -62,8 +62,8 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // getUrl でS3のダウンロードURLを取得
-              const url = await getUrl({ key: staff.photo, level: 'public' });
+              // Storage.get() でS3のダウンロードURLを取得
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -97,7 +97,7 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await getUrl({ key: shift.photo, level: 'public' });
+              const url = await Storage.get(shift.photo, { level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -116,10 +116,6 @@ export default function StaffShiftPage() {
   // スタッフを追加
   // ----------------------------------------
   const createStaff = async () => {
-    console.log('[createStaff] Button clicked!');
-    console.log('Staff name:', staffName);
-    console.log('Photo file:', staffPhotoFile);
-
     if (!staffName.trim()) {
       alert('スタッフ名を入力してください');
       return;
@@ -130,23 +126,12 @@ export default function StaffShiftPage() {
       try {
         // アップロード先を一意にするファイル名
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        console.log('Uploading file to S3 with key:', fileName);
-
-        // uploadData() 呼び出し
-        const uploadTask = uploadData({
-          key: fileName,
-          body: staffPhotoFile,
+        // Storage.put() 呼び出し
+        await Storage.put(fileName, staffPhotoFile, {
           contentType: staffPhotoFile.type,
           level: 'public',
         });
-        console.log('Upload started:', uploadTask);
-
-        // アップロード完了まで待機
-        await uploadTask.result;
-        console.log('Upload completed!');
-
         photoKey = fileName;
-        console.log('Final photoKey:', photoKey);
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
         alert('スタッフ写真のアップロードに失敗しました。');
@@ -156,8 +141,6 @@ export default function StaffShiftPage() {
 
     // DataStoreにスタッフ登録
     try {
-      console.log('Saving staff with DataStore...');
-      // hidden フラグの初期値を false に
       const savedStaff = await DataStore.save(
         new Staff({
           name: staffName,
@@ -165,27 +148,6 @@ export default function StaffShiftPage() {
           hidden: false
         })
       );
-      console.log('Staff created in DataStore:', savedStaff);
-
-      // 登録直後の一覧の再取得
-      const allStaff = await DataStore.query(Staff);
-      // 写真URLを改めてまとめて取得
-      const staffWithPhotoUrls = await Promise.all(
-        allStaff.map(async (staff) => {
-          if (staff.photo) {
-            try {
-              const url = await getUrl({ key: staff.photo, level: 'public' });
-              return { ...staff, photoURL: url };
-            } catch (err) {
-              console.error('写真URL取得エラー:', err);
-              return { ...staff, photoURL: '' };
-            }
-          }
-          return { ...staff, photoURL: '' };
-        })
-      );
-      setStaffList(staffWithPhotoUrls);
-
       // 新規登録したスタッフをすぐ選択状態にする
       setSelectedStaff(savedStaff);
 
@@ -193,7 +155,6 @@ export default function StaffShiftPage() {
       setStaffName('');
       setStaffPhotoFile(null);
       alert('スタッフを追加しました。');
-
     } catch (err) {
       console.error('DataStore save error:', err);
       alert('スタッフの登録に失敗しました');
@@ -204,7 +165,6 @@ export default function StaffShiftPage() {
   // シフトを追加
   // ----------------------------------------
   const createShift = async () => {
-    console.log('[createShift] Button clicked!');
     if (!selectedStaff) {
       alert('スタッフを選択してください');
       return;
@@ -249,13 +209,13 @@ export default function StaffShiftPage() {
         })
       );
       alert('シフトを追加しました。');
-      console.log('Shift created in DataStore');
     } catch (err) {
       console.error('シフト追加エラー:', err);
       alert('シフト登録に失敗しました。');
       return;
     }
 
+    // 入力をリセット
     setShiftDate(null);
     setStartTime(null);
     setEndTime(null);
@@ -288,7 +248,6 @@ export default function StaffShiftPage() {
     try {
       // 削除や更新には "本物のモデルインスタンス" が必要
       const originalStaff = await DataStore.query(Staff, contextStaff.id);
-
       if (!originalStaff) {
         console.error('Staff not found in DataStore');
         return;
@@ -313,7 +272,6 @@ export default function StaffShiftPage() {
   const handleDeleteStaff = async () => {
     if (!contextStaff) return;
     try {
-      // 削除も同様に、本物のモデルインスタンスを取得して行う
       const originalStaff = await DataStore.query(Staff, contextStaff.id);
       if (!originalStaff) {
         console.error('Staff not found in DataStore');

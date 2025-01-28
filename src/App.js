@@ -8,11 +8,8 @@ import {
 } from 'react-router-dom';
 
 // Amplify関連
-import { Amplify } from 'aws-amplify';
+import { Amplify, Auth } from 'aws-amplify';
 import awsconfig from './aws-exports';
-
-// Auth 関連
-import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 
 // Amplify UI
 import {
@@ -144,16 +141,16 @@ function App() {
     checkCurrentUser();
   }, []);
 
+  // 現在のユーザー情報を取得
   const checkCurrentUser = async () => {
     try {
-      // ログインセッションを取得
-      const session = await fetchAuthSession();
+      const session = await Auth.currentSession();
       // グループを IDトークン から取得
-      const groups = session.tokens.idToken.payload['cognito:groups'] || [];
+      const groups = session.getIdToken().payload['cognito:groups'] || [];
       setUserGroups(groups);
 
-      // ユーザー名（ここでは email を表示）
-      const currentUsername = session.idToken?.payload?.email || '';
+      // ユーザー名（メールアドレスなど）
+      const currentUsername = session.getIdToken().payload.email || '';
       setUsername(currentUsername);
 
       setIsAuthenticated(true);
@@ -165,9 +162,10 @@ function App() {
     }
   };
 
+  // サインアウト
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await Auth.signOut();
       setIsAuthenticated(false);
       setUsername(null);
       setUserGroups([]);

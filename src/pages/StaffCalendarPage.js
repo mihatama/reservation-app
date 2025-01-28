@@ -15,10 +15,7 @@ import { Box, Typography, Paper, Container } from '@mui/material';
 import dayjs from 'dayjs';
 
 // Auth
-import { fetchAuthSession } from '@aws-amplify/auth';
-
-// （必要に応じて Storage も）
-import { Storage } from 'aws-amplify'; // 今回は未使用なら削除可
+import { Auth } from 'aws-amplify';
 
 const locales = {
   ja: ja,
@@ -46,8 +43,7 @@ export default function StaffCalendarPage() {
     getUserInfo();
 
     if (staffId) {
-      // スタッフ情報を購読 (1件だけなので observeQuery ではなく query にしてもOKですが
-      // リアルタイム更新が必要なら observeQuery します)
+      // スタッフ情報を購読
       const staffSubscription = DataStore.observeQuery(Staff, (s) =>
         s.id.eq(staffId)
       ).subscribe((snapshot) => {
@@ -66,7 +62,6 @@ export default function StaffCalendarPage() {
       });
 
       return () => {
-        // クリーンアップ
         staffSubscription.unsubscribe();
         shiftSubscription.unsubscribe();
       };
@@ -76,13 +71,13 @@ export default function StaffCalendarPage() {
   // ユーザー情報を取得
   const getUserInfo = async () => {
     try {
-      const session = await fetchAuthSession();
-      const sub = session.idToken?.payload?.sub || '';
+      const session = await Auth.currentSession();
+      const sub = session.getIdToken().payload.sub || '';
       setUserSub(sub);
 
-      // 姓・名の属性をまとめて予約名に利用
-      const familyName = session.idToken?.payload?.family_name || '';
-      const givenName = session.idToken?.payload?.given_name || '';
+      // 姓・名をまとめたフルネーム
+      const familyName = session.getIdToken().payload.family_name || '';
+      const givenName = session.getIdToken().payload.given_name || '';
       setUserFullName(`${familyName} ${givenName}`);
     } catch (err) {
       console.error('Fail to fetch session', err);
