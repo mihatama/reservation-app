@@ -69,7 +69,7 @@ const amplifyTheme = {
   },
 };
 
-// ログイン画面
+// ログイン画面コンポーネント
 function LoginPage() {
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
@@ -117,6 +117,20 @@ function LoginPage() {
           },
         }}
       />
+    </Box>
+  );
+}
+
+// Admin向けユーザー追加ページ（例示用の簡易コンポーネント）
+function AddUserPage() {
+  return (
+    <Box>
+      <Typography variant="h5" gutterBottom>
+        ユーザー追加
+      </Typography>
+      <Typography variant="body1">
+        ここで新規ユーザーを追加する機能を実装できます。
+      </Typography>
     </Box>
   );
 }
@@ -188,6 +202,12 @@ function App() {
                 </Button>
               )}
 
+              {isAdmin && (
+                <Button color="inherit" component={Link} to="/add-user">
+                  ユーザー追加
+                </Button>
+              )}
+
               {isAuthenticated && (
                 <Button color="inherit" component={Link} to="/my-reservations">
                   マイ予約
@@ -247,9 +267,13 @@ function App() {
               {/* スタッフ管理ページ (Adminのみ) */}
               <Route
                 path="/staff-shift"
-                element={
-                  isAdmin ? <StaffShiftPage /> : <Navigate to="/" />
-                }
+                element={isAdmin ? <StaffShiftPage /> : <Navigate to="/" />}
+              />
+
+              {/* ユーザー追加ページ (Adminのみ) */}
+              <Route
+                path="/add-user"
+                element={isAdmin ? <AddUserPage /> : <Navigate to="/" />}
               />
 
               {/* マイ予約確認ページ */}
@@ -264,8 +288,13 @@ function App() {
                 }
               />
 
-              {/* ログインページ */}
-              <Route path="/login" element={<LoginPage />} />
+              {/* ログインページ：認証済みならトップにリダイレクト */}
+              <Route
+                path="/login"
+                element={
+                  isAuthenticated ? <Navigate to="/" /> : <LoginPage />
+                }
+              />
             </Routes>
           </Container>
         </Router>
