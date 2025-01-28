@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'; 
+import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
@@ -56,7 +56,7 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
       console.log('[StaffShiftPage] Staff items fetched:', items);
 
-      // staff.photo からURLを取得
+      // staff.photo からURLを取得 (ここで ...staff を使うので「モデルインスタンス」ではなくなる)
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
@@ -157,7 +157,7 @@ export default function StaffShiftPage() {
     // DataStoreにスタッフ登録
     try {
       console.log('Saving staff with DataStore...');
-      // ★ hidden フラグの初期値を false に
+      // hidden フラグの初期値を false に
       const savedStaff = await DataStore.save(
         new Staff({
           name: staffName,
@@ -279,26 +279,49 @@ export default function StaffShiftPage() {
     setContextStaff(null);
   };
 
-  // スタッフの非表示をトグル
+  // ----------------------------------------
+  // スタッフの非表示をトグル（DataStoreからモデルを再取得してcopyOfを使う）
+  // ----------------------------------------
   const handleToggleHideStaff = async () => {
     if (!contextStaff) return;
+
     try {
+      // contextStaff は「オブジェクト化」されており、
+      // そのままだと "The source object is not a valid model" エラーが出るため
+      // DataStore.query で“本物のモデルインスタンス”を取り直す
+      const originalStaff = await DataStore.query(Staff, contextStaff.id);
+
+      if (!originalStaff) {
+        console.error('Staff not found in DataStore');
+        return;
+      }
+
+      // hidden フラグを反転させる
       await DataStore.save(
-        Staff.copyOf(contextStaff, (updated) => {
-          updated.hidden = !contextStaff.hidden;
+        Staff.copyOf(originalStaff, (updated) => {
+          updated.hidden = !originalStaff.hidden;
         })
       );
     } catch (err) {
       console.error('Error toggling hidden property for staff:', err);
     }
+
     handleCloseContextMenu();
   };
 
-  // スタッフの削除
+  // ----------------------------------------
+  // スタッフ削除
+  // ----------------------------------------
   const handleDeleteStaff = async () => {
     if (!contextStaff) return;
     try {
-      await DataStore.delete(contextStaff);
+      // 削除も同様に、本物のモデルインスタンスを取得して行う
+      const originalStaff = await DataStore.query(Staff, contextStaff.id);
+      if (!originalStaff) {
+        console.error('Staff not found in DataStore');
+        return;
+      }
+      await DataStore.delete(originalStaff);
     } catch (err) {
       console.error('Error deleting staff:', err);
     }
@@ -364,7 +387,7 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    // hidden が true の場合は「非表示」など表示してわかるようにする
+                    // hidden が true の場合は「非表示中」などでわかるように
                     secondary={
                       (staff.photoURL ? '写真あり' : '写真なし') +
                       (staff.hidden ? ' / 非表示' : ' / 表示中')
