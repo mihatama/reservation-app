@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// Storage.get ではなく、個別関数 getUrl を使用
-import { getUrl } from '@aws-amplify/storage';
+// ★ 変更: Storage を直接 import
+// import { getUrl } from '@aws-amplify/storage';
+import { Storage } from 'aws-amplify';
 
 import {
   Box,
@@ -30,7 +31,8 @@ export default function ShiftListPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({ key: staff.photo, level: 'public' });
+              // ★ 変更点: Storage.get でURLを取得
+              const url = await Storage.get(staff.photo, { level: 'public' });
               return { ...staff, photoURL: url };
             } catch {
               return { ...staff, photoURL: placeholder };
