@@ -1,18 +1,30 @@
-type Todo @model {
+type Todo
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
   id: ID!
   name: String!
   description: String
 }
 
-type Staff @model {
+type Staff
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
   id: ID!
   name: String!
   photo: String
   hidden: Boolean
-  description: String  # ★ここを追加
+  description: String
 }
 
-type Shift @model {
+type Shift
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
   id: ID!
   staffID: ID!
   staffID_date: String
@@ -23,7 +35,11 @@ type Shift @model {
   details: String
 }
 
-type Reservation @model {
+type Reservation
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
   id: ID!
   staffID: ID!
   staffID_date: String!
