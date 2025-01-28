@@ -7,11 +7,9 @@
 /* eslint-disable */
 import * as React from "react";
 import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
+import { Todo } from "../models";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
-import { generateClient } from "aws-amplify/api";
-import { getTodo } from "../graphql/queries";
-import { updateTodo } from "../graphql/mutations";
-const client = generateClient();
+import { DataStore } from "aws-amplify/datastore";
 export default function TodoUpdateForm(props) {
   const {
     id: idProp,
@@ -45,12 +43,7 @@ export default function TodoUpdateForm(props) {
   React.useEffect(() => {
     const queryData = async () => {
       const record = idProp
-        ? (
-            await client.graphql({
-              query: getTodo.replaceAll("__typename", ""),
-              variables: { id: idProp },
-            })
-          )?.data?.getTodo
+        ? await DataStore.query(Todo, idProp)
         : todoModelProp;
       setTodoRecord(record);
     };
@@ -88,7 +81,7 @@ export default function TodoUpdateForm(props) {
         event.preventDefault();
         let modelFields = {
           name,
-          description: description ?? null,
+          description,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -118,22 +111,17 @@ export default function TodoUpdateForm(props) {
               modelFields[key] = null;
             }
           });
-          await client.graphql({
-            query: updateTodo.replaceAll("__typename", ""),
-            variables: {
-              input: {
-                id: todoRecord.id,
-                ...modelFields,
-              },
-            },
-          });
+          await DataStore.save(
+            Todo.copyOf(todoRecord, (updated) => {
+              Object.assign(updated, modelFields);
+            })
+          );
           if (onSuccess) {
             onSuccess(modelFields);
           }
         } catch (err) {
           if (onError) {
-            const messages = err.errors.map((e) => e.message).join("\n");
-            onError(modelFields, messages);
+            onError(modelFields, err.message);
           }
         }
       }}

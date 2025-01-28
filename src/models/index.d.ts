@@ -44,6 +44,8 @@ type EagerStaff = {
   readonly id: string;
   readonly name: string;
   readonly photo?: string | null;
+  readonly hidden?: boolean | null;
+  readonly description?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -56,6 +58,8 @@ type LazyStaff = {
   readonly id: string;
   readonly name: string;
   readonly photo?: string | null;
+  readonly hidden?: boolean | null;
+  readonly description?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }

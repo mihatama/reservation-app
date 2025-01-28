@@ -7,11 +7,9 @@
 /* eslint-disable */
 import * as React from "react";
 import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
+import { Reservation } from "../models";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
-import { generateClient } from "aws-amplify/api";
-import { getReservation } from "../graphql/queries";
-import { updateReservation } from "../graphql/mutations";
-const client = generateClient();
+import { DataStore } from "aws-amplify/datastore";
 export default function ReservationUpdateForm(props) {
   const {
     id: idProp,
@@ -61,12 +59,7 @@ export default function ReservationUpdateForm(props) {
   React.useEffect(() => {
     const queryData = async () => {
       const record = idProp
-        ? (
-            await client.graphql({
-              query: getReservation.replaceAll("__typename", ""),
-              variables: { id: idProp },
-            })
-          )?.data?.getReservation
+        ? await DataStore.query(Reservation, idProp)
         : reservationModelProp;
       setReservationRecord(record);
     };
@@ -130,8 +123,8 @@ export default function ReservationUpdateForm(props) {
           date,
           startTime,
           endTime,
-          clientName: clientName ?? null,
-          owner: owner ?? null,
+          clientName,
+          owner,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -161,22 +154,17 @@ export default function ReservationUpdateForm(props) {
               modelFields[key] = null;
             }
           });
-          await client.graphql({
-            query: updateReservation.replaceAll("__typename", ""),
-            variables: {
-              input: {
-                id: reservationRecord.id,
-                ...modelFields,
-              },
-            },
-          });
+          await DataStore.save(
+            Reservation.copyOf(reservationRecord, (updated) => {
+              Object.assign(updated, modelFields);
+            })
+          );
           if (onSuccess) {
             onSuccess(modelFields);
           }
         } catch (err) {
           if (onError) {
-            const messages = err.errors.map((e) => e.message).join("\n");
-            onError(modelFields, messages);
+            onError(modelFields, err.message);
           }
         }
       }}

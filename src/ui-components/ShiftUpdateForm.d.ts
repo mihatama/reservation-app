@@ -6,6 +6,7 @@
 
 import * as React from "react";
 import { GridProps, TextFieldProps } from "@aws-amplify/ui-react";
+import { Shift } from "../models";
 export declare type EscapeHatchProps = {
     [elementHierarchy: string]: Record<string, unknown>;
 } | null;
@@ -54,7 +55,7 @@ export declare type ShiftUpdateFormProps = React.PropsWithChildren<{
     overrides?: ShiftUpdateFormOverridesProps | undefined | null;
 } & {
     id?: string;
-    shift?: any;
+    shift?: Shift;
     onSubmit?: (fields: ShiftUpdateFormInputValues) => ShiftUpdateFormInputValues;
     onSuccess?: (fields: ShiftUpdateFormInputValues) => void;
     onError?: (fields: ShiftUpdateFormInputValues, errorMessage: string) => void;

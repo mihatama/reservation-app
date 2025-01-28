@@ -7,11 +7,9 @@
 /* eslint-disable */
 import * as React from "react";
 import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
+import { Shift } from "../models";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
-import { generateClient } from "aws-amplify/api";
-import { getShift } from "../graphql/queries";
-import { updateShift } from "../graphql/mutations";
-const client = generateClient();
+import { DataStore } from "aws-amplify/datastore";
 export default function ShiftUpdateForm(props) {
   const {
     id: idProp,
@@ -60,12 +58,7 @@ export default function ShiftUpdateForm(props) {
   React.useEffect(() => {
     const queryData = async () => {
       const record = idProp
-        ? (
-            await client.graphql({
-              query: getShift.replaceAll("__typename", ""),
-              variables: { id: idProp },
-            })
-          )?.data?.getShift
+        ? await DataStore.query(Shift, idProp)
         : shiftModelProp;
       setShiftRecord(record);
     };
@@ -108,12 +101,12 @@ export default function ShiftUpdateForm(props) {
         event.preventDefault();
         let modelFields = {
           staffID,
-          staffID_date: staffID_date ?? null,
-          date: date ?? null,
-          startTime: startTime ?? null,
-          endTime: endTime ?? null,
-          photo: photo ?? null,
-          details: details ?? null,
+          staffID_date,
+          date,
+          startTime,
+          endTime,
+          photo,
+          details,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -143,22 +136,17 @@ export default function ShiftUpdateForm(props) {
               modelFields[key] = null;
             }
           });
-          await client.graphql({
-            query: updateShift.replaceAll("__typename", ""),
-            variables: {
-              input: {
-                id: shiftRecord.id,
-                ...modelFields,
-              },
-            },
-          });
+          await DataStore.save(
+            Shift.copyOf(shiftRecord, (updated) => {
+              Object.assign(updated, modelFields);
+            })
+          );
           if (onSuccess) {
             onSuccess(modelFields);
           }
         } catch (err) {
           if (onError) {
-            const messages = err.errors.map((e) => e.message).join("\n");
-            onError(modelFields, messages);
+            onError(modelFields, err.message);
           }
         }
       }}

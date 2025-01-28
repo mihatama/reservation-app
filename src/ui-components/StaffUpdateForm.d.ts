@@ -6,6 +6,7 @@
 
 import * as React from "react";
 import { GridProps, SwitchFieldProps, TextFieldProps } from "@aws-amplify/ui-react";
+import { Staff } from "../models";
 export declare type EscapeHatchProps = {
     [elementHierarchy: string]: Record<string, unknown>;
 } | null;
@@ -45,7 +46,7 @@ export declare type StaffUpdateFormProps = React.PropsWithChildren<{
     overrides?: StaffUpdateFormOverridesProps | undefined | null;
 } & {
     id?: string;
-    staff?: any;
+    staff?: Staff;
     onSubmit?: (fields: StaffUpdateFormInputValues) => StaffUpdateFormInputValues;
     onSuccess?: (fields: StaffUpdateFormInputValues) => void;
     onError?: (fields: StaffUpdateFormInputValues, errorMessage: string) => void;

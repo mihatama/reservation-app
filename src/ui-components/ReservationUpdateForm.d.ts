@@ -6,6 +6,7 @@
 
 import * as React from "react";
 import { GridProps, TextFieldProps } from "@aws-amplify/ui-react";
+import { Reservation } from "../models";
 export declare type EscapeHatchProps = {
     [elementHierarchy: string]: Record<string, unknown>;
 } | null;
@@ -54,7 +55,7 @@ export declare type ReservationUpdateFormProps = React.PropsWithChildren<{
     overrides?: ReservationUpdateFormOverridesProps | undefined | null;
 } & {
     id?: string;
-    reservation?: any;
+    reservation?: Reservation;
     onSubmit?: (fields: ReservationUpdateFormInputValues) => ReservationUpdateFormInputValues;
     onSuccess?: (fields: ReservationUpdateFormInputValues) => void;
     onError?: (fields: ReservationUpdateFormInputValues, errorMessage: string) => void;

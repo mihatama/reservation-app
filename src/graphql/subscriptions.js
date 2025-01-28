@@ -9,6 +9,9 @@ export const onCreateTodo = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -21,6 +24,9 @@ export const onUpdateTodo = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -33,6 +39,9 @@ export const onDeleteTodo = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -47,6 +56,9 @@ export const onCreateStaff = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -61,6 +73,9 @@ export const onUpdateStaff = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -75,6 +90,9 @@ export const onDeleteStaff = /* GraphQL */ `
       description
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -92,6 +110,9 @@ export const onCreateShift = /* GraphQL */ `
       details
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -109,6 +130,9 @@ export const onUpdateShift = /* GraphQL */ `
       details
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -126,6 +150,9 @@ export const onDeleteShift = /* GraphQL */ `
       details
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -145,6 +172,9 @@ export const onCreateReservation = /* GraphQL */ `
       owner
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -164,6 +194,9 @@ export const onUpdateReservation = /* GraphQL */ `
       owner
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
@@ -183,6 +216,9 @@ export const onDeleteReservation = /* GraphQL */ `
       owner
       createdAt
       updatedAt
+      _version
+      _deleted
+      _lastChangedAt
       __typename
     }
   }
