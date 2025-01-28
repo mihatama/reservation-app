@@ -53,10 +53,12 @@ export default function BookingPage() {
     }
   };
 
-  // スタッフ一覧は初回に購読
+  // スタッフ一覧を購読（hidden === false のものだけを表示）
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
-      setStaffList(items);
+      // hidden が false のスタッフのみを抽出
+      const visibleStaff = items.filter((staff) => staff.hidden === false);
+      setStaffList(visibleStaff);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -73,10 +75,12 @@ export default function BookingPage() {
     const allShifts = await DataStore.query(Shift, (s) =>
       s.staffID_date.eq(staffIDDate)
     );
+    // 念のため date 一致で絞る
     const filtered = allShifts.filter((shift) => shift.date === dateStr);
     setAvailableShifts(filtered);
   };
 
+  // 予約の作成
   const createReservation = async (shift) => {
     if (!userSub) {
       alert('予約にはログインが必要です。');
@@ -114,6 +118,7 @@ export default function BookingPage() {
           予約入力
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {/* スタッフ選択 */}
           <select
             style={{ minWidth: '150px', padding: '8px' }}
             value={selectedStaff?.id || ''}
@@ -132,6 +137,7 @@ export default function BookingPage() {
             ))}
           </select>
 
+          {/* 日付選択 */}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="日付"
@@ -140,12 +146,14 @@ export default function BookingPage() {
             />
           </LocalizationProvider>
 
+          {/* シフト確認ボタン */}
           <Button variant="contained" onClick={fetchShifts}>
             シフト確認
           </Button>
         </Box>
       </Paper>
 
+      {/* 選択したスタッフ・日付のシフト一覧 */}
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           選択スタッフ・日付のシフト一覧

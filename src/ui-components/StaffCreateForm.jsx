@@ -6,7 +6,13 @@
 
 /* eslint-disable */
 import * as React from "react";
-import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
+import {
+  Button,
+  Flex,
+  Grid,
+  SwitchField,
+  TextField,
+} from "@aws-amplify/ui-react";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
 import { generateClient } from "aws-amplify/api";
 import { createStaff } from "../graphql/mutations";
@@ -25,18 +31,22 @@ export default function StaffCreateForm(props) {
   const initialValues = {
     name: "",
     photo: "",
+    hidden: false,
   };
   const [name, setName] = React.useState(initialValues.name);
   const [photo, setPhoto] = React.useState(initialValues.photo);
+  const [hidden, setHidden] = React.useState(initialValues.hidden);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     setName(initialValues.name);
     setPhoto(initialValues.photo);
+    setHidden(initialValues.hidden);
     setErrors({});
   };
   const validations = {
     name: [{ type: "Required" }],
     photo: [],
+    hidden: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -66,6 +76,7 @@ export default function StaffCreateForm(props) {
         let modelFields = {
           name,
           photo,
+          hidden,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -130,6 +141,7 @@ export default function StaffCreateForm(props) {
             const modelFields = {
               name: value,
               photo,
+              hidden,
             };
             const result = onChange(modelFields);
             value = result?.name ?? value;
@@ -155,6 +167,7 @@ export default function StaffCreateForm(props) {
             const modelFields = {
               name,
               photo: value,
+              hidden,
             };
             const result = onChange(modelFields);
             value = result?.photo ?? value;
@@ -169,6 +182,32 @@ export default function StaffCreateForm(props) {
         hasError={errors.photo?.hasError}
         {...getOverrideProps(overrides, "photo")}
       ></TextField>
+      <SwitchField
+        label="Hidden"
+        defaultChecked={false}
+        isDisabled={false}
+        isChecked={hidden}
+        onChange={(e) => {
+          let value = e.target.checked;
+          if (onChange) {
+            const modelFields = {
+              name,
+              photo,
+              hidden: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.hidden ?? value;
+          }
+          if (errors.hidden?.hasError) {
+            runValidationTasks("hidden", value);
+          }
+          setHidden(value);
+        }}
+        onBlur={() => runValidationTasks("hidden", hidden)}
+        errorMessage={errors.hidden?.errorMessage}
+        hasError={errors.hidden?.hasError}
+        {...getOverrideProps(overrides, "hidden")}
+      ></SwitchField>
       <Flex
         justifyContent="space-between"
         {...getOverrideProps(overrides, "CTAFlex")}

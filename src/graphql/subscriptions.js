@@ -43,6 +43,7 @@ export const onCreateStaff = /* GraphQL */ `
       id
       name
       photo
+      hidden
       createdAt
       updatedAt
       __typename
@@ -55,6 +56,7 @@ export const onUpdateStaff = /* GraphQL */ `
       id
       name
       photo
+      hidden
       createdAt
       updatedAt
       __typename
@@ -67,6 +69,7 @@ export const onDeleteStaff = /* GraphQL */ `
       id
       name
       photo
+      hidden
       createdAt
       updatedAt
       __typename

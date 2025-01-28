@@ -20,7 +20,9 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Container
+  Container,
+  Menu,
+  MenuItem
 } from '@mui/material';
 
 // 日付・時刻ピッカー
@@ -42,6 +44,10 @@ export default function StaffShiftPage() {
   const [shiftDetail, setShiftDetail] = useState('');
 
   const [shiftList, setShiftList] = useState([]);
+
+  // 右クリックメニュー制御用
+  const [contextMenu, setContextMenu] = useState(null);
+  const [contextStaff, setContextStaff] = useState(null);
 
   // ----------------------------------------
   // スタッフ一覧を購読
@@ -138,7 +144,6 @@ export default function StaffShiftPage() {
         await uploadTask.result;  
         console.log('Upload completed!');
 
-        // 返り値には key が入らない場合があるため、自分で決めた fileName を photoKey に使う
         photoKey = fileName; 
         console.log('Final photoKey:', photoKey);
 
@@ -152,17 +157,19 @@ export default function StaffShiftPage() {
     // DataStoreにスタッフ登録
     try {
       console.log('Saving staff with DataStore...');
+      // ★ hidden フラグの初期値を false に
       const savedStaff = await DataStore.save(
         new Staff({
           name: staffName,
           photo: photoKey,
+          hidden: false
         })
       );
       console.log('Staff created in DataStore:', savedStaff);
 
-      // 【ポイント】登録直後に「手動で DataStore.query」して最新の一覧を再取得
+      // 登録直後の一覧の再取得
       const allStaff = await DataStore.query(Staff);
-      // 取得したスタッフ一覧の photoURL を改めてまとめて取得
+      // 写真URLを改めてまとめて取得
       const staffWithPhotoUrls = await Promise.all(
         allStaff.map(async (staff) => {
           if (staff.photo) {
@@ -177,7 +184,6 @@ export default function StaffShiftPage() {
           return { ...staff, photoURL: '' };
         })
       );
-      // これでローカルのスタッフ一覧を再更新
       setStaffList(staffWithPhotoUrls);
 
       // 新規登録したスタッフをすぐ選択状態にする
@@ -256,6 +262,49 @@ export default function StaffShiftPage() {
     setShiftDetail('');
   };
 
+  // ----------------------------------------
+  // 右クリックメニュー操作
+  // ----------------------------------------
+  const handleStaffContextMenu = (event, staff) => {
+    event.preventDefault(); // ブラウザ標準の右クリックメニューを無効化
+    setContextStaff(staff);
+    setContextMenu({
+      mouseX: event.clientX + 2,
+      mouseY: event.clientY - 6,
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+    setContextStaff(null);
+  };
+
+  // スタッフの非表示をトグル
+  const handleToggleHideStaff = async () => {
+    if (!contextStaff) return;
+    try {
+      await DataStore.save(
+        Staff.copyOf(contextStaff, (updated) => {
+          updated.hidden = !contextStaff.hidden;
+        })
+      );
+    } catch (err) {
+      console.error('Error toggling hidden property for staff:', err);
+    }
+    handleCloseContextMenu();
+  };
+
+  // スタッフの削除
+  const handleDeleteStaff = async () => {
+    if (!contextStaff) return;
+    try {
+      await DataStore.delete(contextStaff);
+    } catch (err) {
+      console.error('Error deleting staff:', err);
+    }
+    handleCloseContextMenu();
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
@@ -311,10 +360,15 @@ export default function StaffShiftPage() {
                   key={staff.id}
                   selected={selectedStaff?.id === staff.id}
                   onClick={() => setSelectedStaff(staff)}
+                  onContextMenu={(e) => handleStaffContextMenu(e, staff)}
                 >
                   <ListItemText
                     primary={staff.name}
-                    secondary={staff.photoURL ? '写真あり' : '写真なし'}
+                    // hidden が true の場合は「非表示」など表示してわかるようにする
+                    secondary={
+                      (staff.photoURL ? '写真あり' : '写真なし') +
+                      (staff.hidden ? ' / 非表示' : ' / 表示中')
+                    }
                   />
                 </ListItemButton>
               ))}
@@ -425,6 +479,23 @@ export default function StaffShiftPage() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* 右クリックメニュー */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem onClick={handleToggleHideStaff}>
+          {contextStaff?.hidden ? '表示にする' : '非表示にする'}
+        </MenuItem>
+        <MenuItem onClick={handleDeleteStaff}>削除</MenuItem>
+      </Menu>
     </Container>
   );
 }

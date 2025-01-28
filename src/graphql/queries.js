@@ -39,6 +39,7 @@ export const getStaff = /* GraphQL */ `
       id
       name
       photo
+      hidden
       createdAt
       updatedAt
       __typename
@@ -56,6 +57,7 @@ export const listStaff = /* GraphQL */ `
         id
         name
         photo
+        hidden
         createdAt
         updatedAt
         __typename
