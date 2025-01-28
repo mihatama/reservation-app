@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// ★ ここを修正: 「Storage」ではなく、モジュラーAPIとして getUrl をインポート
+// ★ ここを修正: 「Storage」ではなく、モジュール形式API
 import { getUrl } from '@aws-amplify/storage';
 
 import {
@@ -21,7 +21,7 @@ export default function ShiftListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // === 一旦すべての Staff を購読 ===
+    // === 一旦すべての Staff を購読（observeQuery）===
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
       console.log('[ShiftListPage] Staff items fetched:', items);
 
@@ -30,7 +30,7 @@ export default function ShiftListPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // ★ 変更点: getUrl を使ってダウンロードURLを取得
+              // getUrl を使ってダウンロードURLを取得
               const url = await getUrl({
                 key: staff.photo,
                 level: 'public',
@@ -47,7 +47,7 @@ export default function ShiftListPage() {
         })
       );
 
-      // === ここで hidden === false のスタッフだけをセット ===
+      // === hidden === false のスタッフだけをセット ===
       const visibleStaff = staffWithUrls.filter((staff) => !staff.hidden);
       setStaffList(visibleStaff);
     });

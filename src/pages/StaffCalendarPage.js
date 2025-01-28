@@ -17,8 +17,8 @@ import dayjs from 'dayjs';
 // Auth
 import { fetchAuthSession } from '@aws-amplify/auth';
 
-// Storage (もし写真URL取得が必要な場合ここで使う)
-import { Storage } from 'aws-amplify'; // 今回は未使用かもしれません
+// （必要に応じて Storage も）
+import { Storage } from 'aws-amplify'; // 今回は未使用なら削除可
 
 const locales = {
   ja: ja,
@@ -39,13 +39,41 @@ export default function StaffCalendarPage() {
   const [userSub, setUserSub] = useState('');
   const [userFullName, setUserFullName] = useState('');
 
+  // ----------------------------
+  // 初回＆staffId変更時に購読をセット
+  // ----------------------------
   useEffect(() => {
     getUserInfo();
+
     if (staffId) {
-      fetchStaffAndShifts(staffId);
+      // スタッフ情報を購読 (1件だけなので observeQuery ではなく query にしてもOKですが
+      // リアルタイム更新が必要なら observeQuery します)
+      const staffSubscription = DataStore.observeQuery(Staff, (s) =>
+        s.id.eq(staffId)
+      ).subscribe((snapshot) => {
+        const items = snapshot.items;
+        if (items.length > 0) {
+          setStaff(items[0]);
+        }
+      });
+
+      // シフトの購読
+      const shiftSubscription = DataStore.observeQuery(Shift, (s) =>
+        s.staffID.eq(staffId)
+      ).subscribe((snapshot) => {
+        const items = snapshot.items;
+        setShifts(items);
+      });
+
+      return () => {
+        // クリーンアップ
+        staffSubscription.unsubscribe();
+        shiftSubscription.unsubscribe();
+      };
     }
   }, [staffId]);
 
+  // ユーザー情報を取得
   const getUserInfo = async () => {
     try {
       const session = await fetchAuthSession();
@@ -61,16 +89,6 @@ export default function StaffCalendarPage() {
     }
   };
 
-  const fetchStaffAndShifts = async (id) => {
-    // スタッフ情報
-    const staffRecord = await DataStore.query(Staff, id);
-    setStaff(staffRecord);
-
-    // そのスタッフのシフト一覧
-    const shiftRecords = await DataStore.query(Shift, (s) => s.staffID.eq(id));
-    setShifts(shiftRecords);
-  };
-
   // カレンダーに表示するイベント
   const events = shifts.map((shift) => {
     const start = new Date(shift.startTime);
@@ -83,7 +101,7 @@ export default function StaffCalendarPage() {
     };
   });
 
-  // シフトクリック => 予約
+  // シフトをクリックしたら予約を作成
   const handleSelectEvent = async (event) => {
     if (!userSub) {
       alert('ログインが必要です。');
