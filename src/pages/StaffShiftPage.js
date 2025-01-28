@@ -3,7 +3,7 @@ import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
 // ★ Storage を Amplify からインポートする
-import { Storage } from 'aws-amplify';
+import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
   TextField,
@@ -59,7 +59,10 @@ export default function StaffShiftPage() {
           if (staff.photo) {
             try {
               // Storage.get を使用してURL取得
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({
+                ey: staff.photo,
+                level: 'public',
+                });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -91,7 +94,7 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await Storage.get(shift.photo, { level: 'public' });
+              const url = await getUrl({ key: shift.photo, level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -120,10 +123,12 @@ export default function StaffShiftPage() {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
         // Amplify Storage.put でアップロード
-        await Storage.put(fileName, staffPhotoFile, {
+        await uploadData({
+          key: fileName,
+          body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
-        });
+          });
         photoKey = fileName;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
