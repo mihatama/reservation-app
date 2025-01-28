@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// ここを修正: `Storage.get` ではなく個別関数
+// Storage.get ではなく個別関数 getUrl を使用
 import { getUrl } from '@aws-amplify/storage';
 
 import {
@@ -21,25 +21,28 @@ export default function ShiftListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      console.log('[ShiftListPage] Staff items fetched:', items);
-      // staff.photo が S3キーなら getUrl() で取得
-      const staffWithUrls = await Promise.all(
-        items.map(async (staff) => {
-          if (staff.photo) {
-            try {
-              const url = await getUrl({ key: staff.photo, level: 'public' });
-              return { ...staff, photoURL: url };
-            } catch {
+    // hidden = false のスタッフのみ取得
+    const staffSub = DataStore.observeQuery(Staff, (c) => c.hidden('eq', false)).subscribe(
+      async ({ items }) => {
+        console.log('[ShiftListPage] Staff items fetched (hidden=false):', items);
+        // staff.photo が S3キーなら getUrl() で取得
+        const staffWithUrls = await Promise.all(
+          items.map(async (staff) => {
+            if (staff.photo) {
+              try {
+                const url = await getUrl({ key: staff.photo, level: 'public' });
+                return { ...staff, photoURL: url };
+              } catch {
+                return { ...staff, photoURL: placeholder };
+              }
+            } else {
               return { ...staff, photoURL: placeholder };
             }
-          } else {
-            return { ...staff, photoURL: placeholder };
-          }
-        })
-      );
-      setStaffList(staffWithUrls);
-    });
+          })
+        );
+        setStaffList(staffWithUrls);
+      }
+    );
 
     return () => staffSub.unsubscribe();
   }, []);
