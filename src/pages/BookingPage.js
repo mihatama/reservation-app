@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 
+import { fetchAuthSession } from '@aws-amplify/auth';
+
 
 import { Staff, Shift, Reservation } from '../models';
 import {
@@ -39,7 +41,7 @@ export default function BookingPage() {
   const getUserInfo = async () => {
     try {
       // Auth は @aws-amplify/auth から
-      const session = await Auth.currentSession();
+      const session = await fetchAuthSession();
       const sub = session.getIdToken().payload.sub || '';
       setUserSub(sub);
 
