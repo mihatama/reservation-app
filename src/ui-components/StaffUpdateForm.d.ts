@@ -25,11 +25,13 @@ export declare type StaffUpdateFormInputValues = {
     name?: string;
     photo?: string;
     hidden?: boolean;
+    description?: string;
 };
 export declare type StaffUpdateFormValidationValues = {
     name?: ValidationFunction<string>;
     photo?: ValidationFunction<string>;
     hidden?: ValidationFunction<boolean>;
+    description?: ValidationFunction<string>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type StaffUpdateFormOverridesProps = {
@@ -37,6 +39,7 @@ export declare type StaffUpdateFormOverridesProps = {
     name?: PrimitiveOverrideProps<TextFieldProps>;
     photo?: PrimitiveOverrideProps<TextFieldProps>;
     hidden?: PrimitiveOverrideProps<SwitchFieldProps>;
+    description?: PrimitiveOverrideProps<TextFieldProps>;
 } & EscapeHatchProps;
 export declare type StaffUpdateFormProps = React.PropsWithChildren<{
     overrides?: StaffUpdateFormOverridesProps | undefined | null;

@@ -1,6 +1,8 @@
 {
   "features": {
     "graphqltransformer": {
+      "transformerVersion": 2,
+      
       "addmissingownerfields": true,
       "improvepluralization": false,
       "validatetypenamereservedwords": true,
@@ -8,7 +10,6 @@
       "enableiterativegsiupdates": true,
       "secondarykeyasgsi": true,
       "skipoverridemutationinputtypes": true,
-      "transformerversion": 2,
       "suppressschemamigrationprompt": true,
       "securityenhancementnotification": false,
       "showfieldauthnotification": false,

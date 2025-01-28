@@ -34,10 +34,14 @@ export default function StaffUpdateForm(props) {
     name: "",
     photo: "",
     hidden: false,
+    description: "",
   };
   const [name, setName] = React.useState(initialValues.name);
   const [photo, setPhoto] = React.useState(initialValues.photo);
   const [hidden, setHidden] = React.useState(initialValues.hidden);
+  const [description, setDescription] = React.useState(
+    initialValues.description
+  );
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     const cleanValues = staffRecord
@@ -46,6 +50,7 @@ export default function StaffUpdateForm(props) {
     setName(cleanValues.name);
     setPhoto(cleanValues.photo);
     setHidden(cleanValues.hidden);
+    setDescription(cleanValues.description);
     setErrors({});
   };
   const [staffRecord, setStaffRecord] = React.useState(staffModelProp);
@@ -68,6 +73,7 @@ export default function StaffUpdateForm(props) {
     name: [{ type: "Required" }],
     photo: [],
     hidden: [],
+    description: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -98,6 +104,7 @@ export default function StaffUpdateForm(props) {
           name,
           photo: photo ?? null,
           hidden: hidden ?? null,
+          description: description ?? null,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -161,6 +168,7 @@ export default function StaffUpdateForm(props) {
               name: value,
               photo,
               hidden,
+              description,
             };
             const result = onChange(modelFields);
             value = result?.name ?? value;
@@ -187,6 +195,7 @@ export default function StaffUpdateForm(props) {
               name,
               photo: value,
               hidden,
+              description,
             };
             const result = onChange(modelFields);
             value = result?.photo ?? value;
@@ -213,6 +222,7 @@ export default function StaffUpdateForm(props) {
               name,
               photo,
               hidden: value,
+              description,
             };
             const result = onChange(modelFields);
             value = result?.hidden ?? value;
@@ -227,6 +237,33 @@ export default function StaffUpdateForm(props) {
         hasError={errors.hidden?.hasError}
         {...getOverrideProps(overrides, "hidden")}
       ></SwitchField>
+      <TextField
+        label="Description"
+        isRequired={false}
+        isReadOnly={false}
+        value={description}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              name,
+              photo,
+              hidden,
+              description: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.description ?? value;
+          }
+          if (errors.description?.hasError) {
+            runValidationTasks("description", value);
+          }
+          setDescription(value);
+        }}
+        onBlur={() => runValidationTasks("description", description)}
+        errorMessage={errors.description?.errorMessage}
+        hasError={errors.description?.hasError}
+        {...getOverrideProps(overrides, "description")}
+      ></TextField>
       <Flex
         justifyContent="space-between"
         {...getOverrideProps(overrides, "CTAFlex")}

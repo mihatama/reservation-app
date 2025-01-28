@@ -7,16 +7,15 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-// Amplify関連
-import { Amplify, Auth } from 'aws-amplify';
+// ※ ここでは Amplify 本体のみ読み込む。Auth 関数は別途 @aws-amplify/auth でインポート
+import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
 
-// Amplify UI
+// Auth 関数だけ別途インポート
 import {
-  Authenticator,
-  ThemeProvider as AmplifyThemeProvider,
-} from '@aws-amplify/ui-react';
-import '@aws-amplify/ui-react/styles.css';
+  fetchAuthSession,
+  signOut,
+} from '@aws-amplify/auth';
 
 // ページコンポーネント
 import StaffShiftPage from './pages/StaffShiftPage';
@@ -24,6 +23,13 @@ import BookingPage from './pages/BookingPage';
 import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
+
+// Amplify UI
+import {
+  Authenticator,
+  ThemeProvider as AmplifyThemeProvider,
+} from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 
 // Material UI
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
@@ -141,16 +147,17 @@ function App() {
     checkCurrentUser();
   }, []);
 
-  // 現在のユーザー情報を取得
   const checkCurrentUser = async () => {
     try {
-      const session = await Auth.currentSession();
+      // ログインセッションを取得
+      const session = await fetchAuthSession();
+
       // グループを IDトークン から取得
-      const groups = session.getIdToken().payload['cognito:groups'] || [];
+      const groups = session.tokens.idToken.payload['cognito:groups'] || [];
       setUserGroups(groups);
 
-      // ユーザー名（メールアドレスなど）
-      const currentUsername = session.getIdToken().payload.email || '';
+      // ユーザー名（ここでは email を表示）
+      const currentUsername = session.idToken?.payload?.email || '';
       setUsername(currentUsername);
 
       setIsAuthenticated(true);
@@ -162,10 +169,10 @@ function App() {
     }
   };
 
-  // サインアウト
   const handleSignOut = async () => {
     try {
-      await Auth.signOut();
+      // モジュール式の signOut を呼ぶ
+      await signOut();
       setIsAuthenticated(false);
       setUsername(null);
       setUserGroups([]);

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Reservation } from '../models';
-import { Auth } from 'aws-amplify';
 import dayjs from 'dayjs';
 import {
   Container,
@@ -15,6 +14,10 @@ import {
   Typography,
 } from '@mui/material';
 
+// ★ こちらも Auth→fetchAuthSession に
+
+import { fetchAuthSession } from '@aws-amplify/auth';
+
 export default function MyReservationsPage() {
   const [reservations, setReservations] = useState([]);
   const [userSub, setUserSub] = useState('');
@@ -25,7 +28,6 @@ export default function MyReservationsPage() {
 
   useEffect(() => {
     if (!userSub) return;
-    // 自分の予約だけ購読
     const subscription = DataStore.observeQuery(Reservation, (r) =>
       r.owner.eq(userSub)
     ).subscribe(({ items }) => {
@@ -36,8 +38,10 @@ export default function MyReservationsPage() {
 
   const getUserInfo = async () => {
     try {
-      const session = await Auth.currentSession();
-      const sub = session.getIdToken().payload.sub || '';
+
+     const session = await fetchAuthSession();
+      // session.tokens.idToken.payload.sub
+      const sub = session.tokens?.idToken?.payload?.sub || '';
       setUserSub(sub);
     } catch (err) {
       console.error('Fail to fetch session', err);
@@ -69,12 +73,8 @@ export default function MyReservationsPage() {
                   .map((res) => (
                     <TableRow key={res.id}>
                       <TableCell>{res.date}</TableCell>
-                      <TableCell>
-                        {dayjs(res.startTime).format('HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        {dayjs(res.endTime).format('HH:mm')}
-                      </TableCell>
+                      <TableCell>{dayjs(res.startTime).format('HH:mm')}</TableCell>
+                      <TableCell>{dayjs(res.endTime).format('HH:mm')}</TableCell>
                       <TableCell>{res.clientName}</TableCell>
                     </TableRow>
                   ))}

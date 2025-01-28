@@ -25,11 +25,13 @@ export declare type StaffCreateFormInputValues = {
     name?: string;
     photo?: string;
     hidden?: boolean;
+    description?: string;
 };
 export declare type StaffCreateFormValidationValues = {
     name?: ValidationFunction<string>;
     photo?: ValidationFunction<string>;
     hidden?: ValidationFunction<boolean>;
+    description?: ValidationFunction<string>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type StaffCreateFormOverridesProps = {
@@ -37,6 +39,7 @@ export declare type StaffCreateFormOverridesProps = {
     name?: PrimitiveOverrideProps<TextFieldProps>;
     photo?: PrimitiveOverrideProps<TextFieldProps>;
     hidden?: PrimitiveOverrideProps<SwitchFieldProps>;
+    description?: PrimitiveOverrideProps<TextFieldProps>;
 } & EscapeHatchProps;
 export declare type StaffCreateFormProps = React.PropsWithChildren<{
     overrides?: StaffCreateFormOverridesProps | undefined | null;

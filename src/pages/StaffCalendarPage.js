@@ -14,12 +14,13 @@ import ja from 'date-fns/locale/ja';
 import { Box, Typography, Paper, Container } from '@mui/material';
 import dayjs from 'dayjs';
 
-// Auth
-import { Auth } from 'aws-amplify';
+// Auth関数 (モジュール式)
+import { fetchAuthSession } from '@aws-amplify/auth';
 
-const locales = {
-  ja: ja,
-};
+// 不要なら削除
+// import { Storage } from 'aws-amplify';
+
+const locales = { ja };
 
 const localizer = dateFnsLocalizer({
   format,
@@ -36,30 +37,23 @@ export default function StaffCalendarPage() {
   const [userSub, setUserSub] = useState('');
   const [userFullName, setUserFullName] = useState('');
 
-  // ----------------------------
-  // 初回＆staffId変更時に購読をセット
-  // ----------------------------
   useEffect(() => {
     getUserInfo();
 
     if (staffId) {
-      // スタッフ情報を購読
-      const staffSubscription = DataStore.observeQuery(Staff, (s) =>
-        s.id.eq(staffId)
-      ).subscribe((snapshot) => {
-        const items = snapshot.items;
-        if (items.length > 0) {
-          setStaff(items[0]);
-        }
-      });
+      // observeQueryで購読する
+      const staffSubscription = DataStore.observeQuery(Staff, s => s.id.eq(staffId))
+        .subscribe((snapshot) => {
+          const items = snapshot.items;
+          if (items.length > 0) {
+            setStaff(items[0]);
+          }
+        });
 
-      // シフトの購読
-      const shiftSubscription = DataStore.observeQuery(Shift, (s) =>
-        s.staffID.eq(staffId)
-      ).subscribe((snapshot) => {
-        const items = snapshot.items;
-        setShifts(items);
-      });
+      const shiftSubscription = DataStore.observeQuery(Shift, s => s.staffID.eq(staffId))
+        .subscribe((snapshot) => {
+          setShifts(snapshot.items);
+        });
 
       return () => {
         staffSubscription.unsubscribe();
@@ -68,16 +62,14 @@ export default function StaffCalendarPage() {
     }
   }, [staffId]);
 
-  // ユーザー情報を取得
   const getUserInfo = async () => {
     try {
-      const session = await Auth.currentSession();
-      const sub = session.getIdToken().payload.sub || '';
+      const session = await fetchAuthSession();
+      const sub = session.idToken?.payload?.sub || '';
       setUserSub(sub);
 
-      // 姓・名をまとめたフルネーム
-      const familyName = session.getIdToken().payload.family_name || '';
-      const givenName = session.getIdToken().payload.given_name || '';
+      const familyName = session.idToken?.payload?.family_name || '';
+      const givenName = session.idToken?.payload?.given_name || '';
       setUserFullName(`${familyName} ${givenName}`);
     } catch (err) {
       console.error('Fail to fetch session', err);
@@ -96,7 +88,7 @@ export default function StaffCalendarPage() {
     };
   });
 
-  // シフトをクリックしたら予約を作成
+  // シフトクリック => 予約
   const handleSelectEvent = async (event) => {
     if (!userSub) {
       alert('ログインが必要です。');
@@ -109,7 +101,6 @@ export default function StaffCalendarPage() {
     );
     if (!confirmBook) return;
 
-    // シフトIDから元のShiftモデルを取得
     const shiftObj = shifts.find((s) => s.id === event.id);
     if (!shiftObj) {
       alert('エラー: シフトを特定できませんでした。');

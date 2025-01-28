@@ -9,6 +9,7 @@ type Staff @model {
   name: String!
   photo: String
   hidden: Boolean
+  description: String  # ★ここを追加
 }
 
 type Shift @model {

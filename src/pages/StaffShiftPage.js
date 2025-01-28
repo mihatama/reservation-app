@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// 修正ポイント: Storage.put, Storage.get を使う
-import { Storage } from 'aws-amplify';
+// ★ 重要: それぞれ個別インポート
+import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
   TextField,
@@ -22,11 +22,9 @@ import {
   TableBody,
   Container,
   Menu,
-  MenuItem,
-  Box
+  MenuItem
 } from '@mui/material';
 
-// 日付・時刻ピッカー
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -55,15 +53,12 @@ export default function StaffShiftPage() {
   // ----------------------------------------
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      console.log('[StaffShiftPage] Staff items fetched:', items);
-
       // staff.photo からURLを取得
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // Storage.get() でS3のダウンロードURLを取得
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -91,13 +86,11 @@ export default function StaffShiftPage() {
     const subscription = DataStore.observeQuery(Shift, (s) =>
       s.staffID.eq(selectedStaff.id)
     ).subscribe(async ({ items }) => {
-      console.log('[StaffShiftPage] Shift items fetched for staff:', selectedStaff.id, items);
-
       const shiftWithUrls = await Promise.all(
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await Storage.get(shift.photo, { level: 'public' });
+              const url = await getUrl({ key: shift.photo, level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -124,13 +117,17 @@ export default function StaffShiftPage() {
     let photoKey = '';
     if (staffPhotoFile) {
       try {
-        // アップロード先を一意にするファイル名
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        // Storage.put() 呼び出し
-        await Storage.put(fileName, staffPhotoFile, {
+        // uploadData() 呼び出し
+        const uploadTask = uploadData({
+          key: fileName,
+          body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
+        // アップロード完了まで待機
+        await uploadTask.result;
+
         photoKey = fileName;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
@@ -145,10 +142,10 @@ export default function StaffShiftPage() {
         new Staff({
           name: staffName,
           photo: photoKey,
-          hidden: false
+          hidden: false,
         })
       );
-      // 新規登録したスタッフをすぐ選択状態にする
+      // 新規登録したスタッフをすぐ選択状態に
       setSelectedStaff(savedStaff);
 
       // 入力リセット
@@ -215,7 +212,6 @@ export default function StaffShiftPage() {
       return;
     }
 
-    // 入力をリセット
     setShiftDate(null);
     setStartTime(null);
     setEndTime(null);
@@ -226,7 +222,7 @@ export default function StaffShiftPage() {
   // 右クリックメニュー操作
   // ----------------------------------------
   const handleStaffContextMenu = (event, staff) => {
-    event.preventDefault(); // ブラウザ標準の右クリックメニューを無効化
+    event.preventDefault();
     setContextStaff(staff);
     setContextMenu({
       mouseX: event.clientX + 2,
@@ -244,16 +240,12 @@ export default function StaffShiftPage() {
   // ----------------------------------------
   const handleToggleHideStaff = async () => {
     if (!contextStaff) return;
-
     try {
-      // 削除や更新には "本物のモデルインスタンス" が必要
       const originalStaff = await DataStore.query(Staff, contextStaff.id);
       if (!originalStaff) {
         console.error('Staff not found in DataStore');
         return;
       }
-
-      // hidden フラグを反転させる
       await DataStore.save(
         Staff.copyOf(originalStaff, (updated) => {
           updated.hidden = !originalStaff.hidden;
@@ -262,7 +254,6 @@ export default function StaffShiftPage() {
     } catch (err) {
       console.error('Error toggling hidden property for staff:', err);
     }
-
     handleCloseContextMenu();
   };
 
@@ -343,7 +334,6 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    // hidden が true の場合は「非表示中」などでわかるように
                     secondary={
                       (staff.photoURL ? '写真あり' : '写真なし') +
                       (staff.hidden ? ' / 非表示' : ' / 表示中')

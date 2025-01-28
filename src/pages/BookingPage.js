@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
+
+
 import { Staff, Shift, Reservation } from '../models';
 import {
   Box,
@@ -16,13 +18,9 @@ import {
 } from '@mui/material';
 
 import dayjs from 'dayjs';
-
-// Material UI Pickers
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-
-import { Auth } from 'aws-amplify';
 
 export default function BookingPage() {
   const [staffList, setStaffList] = useState([]);
@@ -40,6 +38,7 @@ export default function BookingPage() {
 
   const getUserInfo = async () => {
     try {
+      // Auth は @aws-amplify/auth から
       const session = await Auth.currentSession();
       const sub = session.getIdToken().payload.sub || '';
       setUserSub(sub);
@@ -53,17 +52,16 @@ export default function BookingPage() {
     }
   };
 
-  // スタッフ一覧を購読（hidden === false のものだけを表示）
+  // スタッフ一覧を購読
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
-      // hidden が false のスタッフのみを抽出
-      const visibleStaff = items.filter((staff) => staff.hidden === false);
+      const visibleStaff = items.filter((s) => s.hidden === false);
       setStaffList(visibleStaff);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // 選択したスタッフと日付に基づき、シフトを取得
+  // シフトを取得
   const fetchShifts = async () => {
     if (!selectedStaff || !selectedDate) {
       alert('スタッフと日付を指定してください。');
@@ -75,12 +73,11 @@ export default function BookingPage() {
     const allShifts = await DataStore.query(Shift, (s) =>
       s.staffID_date.eq(staffIDDate)
     );
-    // 念のため date 一致で絞る
     const filtered = allShifts.filter((shift) => shift.date === dateStr);
     setAvailableShifts(filtered);
   };
 
-  // 予約の作成
+  // 予約を作成
   const createReservation = async (shift) => {
     if (!userSub) {
       alert('予約にはログインが必要です。');
@@ -146,14 +143,12 @@ export default function BookingPage() {
             />
           </LocalizationProvider>
 
-          {/* シフト確認ボタン */}
           <Button variant="contained" onClick={fetchShifts}>
             シフト確認
           </Button>
         </Box>
       </Paper>
 
-      {/* 選択したスタッフ・日付のシフト一覧 */}
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           選択スタッフ・日付のシフト一覧
@@ -186,10 +181,7 @@ export default function BookingPage() {
                         {dayjs(shift.endTime).format('HH:mm')}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outlined"
-                          onClick={() => createReservation(shift)}
-                        >
+                        <Button variant="outlined" onClick={() => createReservation(shift)}>
                           この枠で予約
                         </Button>
                       </TableCell>

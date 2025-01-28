@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// 修正ポイント: Storage.get を使う
-import { Storage } from 'aws-amplify';
+// 古い Storage import は削除。代わりに必要な関数だけをインポート
+import { getUrl } from '@aws-amplify/storage';
 
 import {
   Box,
@@ -11,8 +12,6 @@ import {
   Paper,
   Container
 } from '@mui/material';
-
-import { useNavigate } from 'react-router-dom';
 
 // 写真がない場合のダミー
 import placeholder from '../assets/placeholder.png';
@@ -22,30 +21,29 @@ export default function ShiftListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // === 一旦すべての Staff を購読（observeQuery）===
+    // === DataStore.observeQuery(Staff) などで購読===
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      console.log('[ShiftListPage] Staff items fetched:', items);
-
       // S3写真URLを取得
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // Storage.get を使ってダウンロードURLを取得
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({
+                key: staff.photo,
+                level: 'public',
+              });
               return { ...staff, photoURL: url };
             } catch {
               // 取得失敗時はダミー画像をセット
               return { ...staff, photoURL: placeholder };
             }
           } else {
-            // photo が無い場合はダミー画像
             return { ...staff, photoURL: placeholder };
           }
         })
       );
 
-      // === hidden === false のスタッフだけをセット ===
+      // hidden === false のスタッフだけ
       const visibleStaff = staffWithUrls.filter((staff) => !staff.hidden);
       setStaffList(visibleStaff);
     });
@@ -54,7 +52,6 @@ export default function ShiftListPage() {
   }, []);
 
   const handleRowClick = (staffId) => {
-    // クリックしたスタッフのカレンダーへ飛ばす
     navigate(`/calendar/${staffId}`);
   };
 
