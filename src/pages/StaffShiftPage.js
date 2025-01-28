@@ -1,10 +1,10 @@
+// StaffShiftPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// ★ こちらを変更
-// import { uploadData, getUrl } from '@aws-amplify/storage';
-import { Storage } from 'aws-amplify';
+// ★ 重要: Storageではなく、モジュール形式のAPIを個別インポート
+import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
   TextField,
@@ -62,8 +62,8 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // ★ 変更点: Storage.get でURLを取得
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              // getUrl でS3のダウンロードURLを取得
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -97,8 +97,7 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              // ★ 変更点: Storage.get でURLを取得
-              const url = await Storage.get(shift.photo, { level: 'public' });
+              const url = await getUrl({ key: shift.photo, level: 'public' });
               return { ...shift, photoURL: url };
             } catch {
               return { ...shift, photoURL: '' };
@@ -133,11 +132,17 @@ export default function StaffShiftPage() {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
         console.log('Uploading file to S3 with key:', fileName);
 
-        // ★ 変更点: Storage.put を使う
-        await Storage.put(fileName, staffPhotoFile, {
+        // uploadData() 呼び出し
+        const uploadTask = uploadData({
+          key: fileName,
+          body: staffPhotoFile,
           contentType: staffPhotoFile.type,
           level: 'public',
         });
+        console.log('Upload started:', uploadTask);
+
+        // アップロード完了まで待機
+        await uploadTask.result;
         console.log('Upload completed!');
 
         photoKey = fileName;
@@ -169,8 +174,7 @@ export default function StaffShiftPage() {
         allStaff.map(async (staff) => {
           if (staff.photo) {
             try {
-              // ★ 変更点: Storage.get を使う
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              const url = await getUrl({ key: staff.photo, level: 'public' });
               return { ...staff, photoURL: url };
             } catch (err) {
               console.error('写真URL取得エラー:', err);
@@ -276,15 +280,13 @@ export default function StaffShiftPage() {
   };
 
   // ----------------------------------------
-  // スタッフの非表示をトグル（DataStoreからモデルを再取得してcopyOfを使う）
+  // スタッフの非表示をトグル
   // ----------------------------------------
   const handleToggleHideStaff = async () => {
     if (!contextStaff) return;
 
     try {
-      // contextStaff は「オブジェクト化」されており、
-      // そのままだと "The source object is not a valid model" エラーが出るため
-      // DataStore.query で“本物のモデルインスタンス”を取り直す
+      // 削除や更新には "本物のモデルインスタンス" が必要
       const originalStaff = await DataStore.query(Staff, contextStaff.id);
 
       if (!originalStaff) {

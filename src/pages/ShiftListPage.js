@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
 
-// ★ ここを修正: Storage は aws-amplify ではなく '@aws-amplify/storage' からインポートする
-import { Storage } from '@aws-amplify/storage';
+// ★ ここを修正: 「Storage」ではなく、モジュラーAPIとして getUrl をインポート
+import { getUrl } from '@aws-amplify/storage';
 
 import {
   Box,
@@ -30,8 +30,11 @@ export default function ShiftListPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // Storage.get でS3上のファイルURLを取得
-              const url = await Storage.get(staff.photo, { level: 'public' });
+              // ★ 変更点: getUrl を使ってダウンロードURLを取得
+              const url = await getUrl({
+                key: staff.photo,
+                level: 'public',
+              });
               return { ...staff, photoURL: url };
             } catch {
               // 取得失敗時はダミー画像をセット
