@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
-
-// 古い Storage import は削除。代わりに必要な関数だけをインポート
+// Storage の getUrl を使用
 import { getUrl } from '@aws-amplify/storage';
 
 import {
@@ -13,7 +12,6 @@ import {
   Container
 } from '@mui/material';
 
-// 写真がない場合のダミー
 import placeholder from '../assets/placeholder.png';
 
 export default function ShiftListPage() {
@@ -21,30 +19,35 @@ export default function ShiftListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // === DataStore.observeQuery(Staff) などで購読===
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // S3写真URLを取得
+      // 1) staff.photo から S3 URL を生成
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const url = await getUrl({
-                key: staff.photo,
-                level: 'public',
-              });
+              // どのキーを見に行っているかログを出す
+              console.log('Fetching URL for key:', staff.photo);
+
+              // getUrlを呼び出す
+              const { url } = await getUrl(staff.photo, { level: 'public' });
+
+              // 生成されたURLを表示
+              console.log('Fetched URL:', url);
+
               return { ...staff, photoURL: url };
-            } catch {
-              // 取得失敗時はダミー画像をセット
+            } catch (err) {
+              console.error('写真URL取得エラー:', err);
               return { ...staff, photoURL: placeholder };
             }
           } else {
+            // photo が設定されていないスタッフの場合
             return { ...staff, photoURL: placeholder };
           }
         })
       );
 
-      // hidden === false のスタッフだけ
-      const visibleStaff = staffWithUrls.filter((staff) => !staff.hidden);
+      // 2) hidden=false のスタッフのみ表示
+      const visibleStaff = staffWithUrls.filter((st) => !st.hidden);
       setStaffList(visibleStaff);
     });
 
