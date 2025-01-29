@@ -29,6 +29,7 @@ export declare type ShiftCreateFormInputValues = {
     endTime?: string;
     photo?: string;
     details?: string;
+    capacity?: number;
 };
 export declare type ShiftCreateFormValidationValues = {
     staffID?: ValidationFunction<string>;
@@ -38,6 +39,7 @@ export declare type ShiftCreateFormValidationValues = {
     endTime?: ValidationFunction<string>;
     photo?: ValidationFunction<string>;
     details?: ValidationFunction<string>;
+    capacity?: ValidationFunction<number>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type ShiftCreateFormOverridesProps = {
@@ -49,6 +51,7 @@ export declare type ShiftCreateFormOverridesProps = {
     endTime?: PrimitiveOverrideProps<TextFieldProps>;
     photo?: PrimitiveOverrideProps<TextFieldProps>;
     details?: PrimitiveOverrideProps<TextFieldProps>;
+    capacity?: PrimitiveOverrideProps<TextFieldProps>;
 } & EscapeHatchProps;
 export declare type ShiftCreateFormProps = React.PropsWithChildren<{
     overrides?: ShiftCreateFormOverridesProps | undefined | null;

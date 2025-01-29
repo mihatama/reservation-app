@@ -30,6 +30,7 @@ export default function ShiftUpdateForm(props) {
     endTime: "",
     photo: "",
     details: "",
+    capacity: "",
   };
   const [staffID, setStaffID] = React.useState(initialValues.staffID);
   const [staffID_date, setStaffID_date] = React.useState(
@@ -40,6 +41,7 @@ export default function ShiftUpdateForm(props) {
   const [endTime, setEndTime] = React.useState(initialValues.endTime);
   const [photo, setPhoto] = React.useState(initialValues.photo);
   const [details, setDetails] = React.useState(initialValues.details);
+  const [capacity, setCapacity] = React.useState(initialValues.capacity);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     const cleanValues = shiftRecord
@@ -52,6 +54,7 @@ export default function ShiftUpdateForm(props) {
     setEndTime(cleanValues.endTime);
     setPhoto(cleanValues.photo);
     setDetails(cleanValues.details);
+    setCapacity(cleanValues.capacity);
     setErrors({});
   };
   const [shiftRecord, setShiftRecord] = React.useState(shiftModelProp);
@@ -73,6 +76,7 @@ export default function ShiftUpdateForm(props) {
     endTime: [],
     photo: [],
     details: [],
+    capacity: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -107,6 +111,7 @@ export default function ShiftUpdateForm(props) {
           endTime,
           photo,
           details,
+          capacity,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -169,6 +174,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.staffID ?? value;
@@ -199,6 +205,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.staffID_date ?? value;
@@ -229,6 +236,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.date ?? value;
@@ -259,6 +267,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.startTime ?? value;
@@ -289,6 +298,7 @@ export default function ShiftUpdateForm(props) {
               endTime: value,
               photo,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.endTime ?? value;
@@ -319,6 +329,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo: value,
               details,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.photo ?? value;
@@ -349,6 +360,7 @@ export default function ShiftUpdateForm(props) {
               endTime,
               photo,
               details: value,
+              capacity,
             };
             const result = onChange(modelFields);
             value = result?.details ?? value;
@@ -362,6 +374,41 @@ export default function ShiftUpdateForm(props) {
         errorMessage={errors.details?.errorMessage}
         hasError={errors.details?.hasError}
         {...getOverrideProps(overrides, "details")}
+      ></TextField>
+      <TextField
+        label="Capacity"
+        isRequired={false}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={capacity}
+        onChange={(e) => {
+          let value = isNaN(parseInt(e.target.value))
+            ? e.target.value
+            : parseInt(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              staffID,
+              staffID_date,
+              date,
+              startTime,
+              endTime,
+              photo,
+              details,
+              capacity: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.capacity ?? value;
+          }
+          if (errors.capacity?.hasError) {
+            runValidationTasks("capacity", value);
+          }
+          setCapacity(value);
+        }}
+        onBlur={() => runValidationTasks("capacity", capacity)}
+        errorMessage={errors.capacity?.errorMessage}
+        hasError={errors.capacity?.hasError}
+        {...getOverrideProps(overrides, "capacity")}
       ></TextField>
       <Flex
         justifyContent="space-between"

@@ -51,6 +51,7 @@ export default function StaffShiftPage() {
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
   const [shiftDetail, setShiftDetail] = useState('');
+  const [shiftCapacity, setShiftCapacity] = useState(1); // ★ 追加: 定員
 
   // シフト一覧
   const [shiftList, setShiftList] = useState([]);
@@ -69,7 +70,6 @@ export default function StaffShiftPage() {
   const [breakEndTime, setBreakEndTime] = useState(null);
 
   // 曜日チェックボックス
-  // [日, 月, 火, 水, 木, 金, 土] の順で管理する例
   const [daysOfWeek, setDaysOfWeek] = useState({
     sun: false,
     mon: false,
@@ -89,6 +89,8 @@ export default function StaffShiftPage() {
   const [autoEndTime, setAutoEndTime] = useState(null);
   // 自動分割時のシフト詳細
   const [autoShiftDetail, setAutoShiftDetail] = useState('');
+  // 自動分割時の定員
+  const [autoShiftCapacity, setAutoShiftCapacity] = useState(1); // ★ 追加
 
   // ----------------------------------------
   // 予約一覧(Staff一覧)を購読
@@ -257,6 +259,7 @@ export default function StaffShiftPage() {
           endTime: endISO,
           photo: shiftPhotoKey,
           details: shiftDetail,
+          capacity: shiftCapacity, // ★ 単発シフトの定員を追加
         })
       );
       alert('シフトを追加しました。');
@@ -270,6 +273,7 @@ export default function StaffShiftPage() {
     setStartTime(null);
     setEndTime(null);
     setShiftDetail('');
+    setShiftCapacity(1);
   };
 
   // --------------------------------------------------------
@@ -285,9 +289,6 @@ export default function StaffShiftPage() {
       bStart, bEnd: 休憩開始/終了の dayjsオブジェクト（nullの場合は休憩なしとみなす）
     */
 
-    // まず、baseStart ~ baseEnd を2つの稼働区間に分ける（休憩を挟む場合）
-    // 休憩あり： [baseStart, bStart] と [bEnd, baseEnd]
-    // 休憩なし： [baseStart, baseEnd]
     let ranges = [];
 
     if (bStart && bEnd && bEnd.isAfter(bStart)) {
@@ -295,11 +296,11 @@ export default function StaffShiftPage() {
       const firstRangeEnd = bStart.isAfter(baseStart) ? bStart : baseStart;
       const secondRangeStart = bEnd.isBefore(baseEnd) ? bEnd : baseEnd;
 
-      // 1つ目の稼働範囲（開始～休憩開始）: もしfirstRangeEndがbaseStartより後なら有効
+      // 1つ目の稼働範囲
       if (firstRangeEnd.isAfter(baseStart)) {
         ranges.push([baseStart, firstRangeEnd]);
       }
-      // 2つ目の稼働範囲（休憩終了～終了）: もしsecondRangeStartがbEndより後なら有効
+      // 2つ目の稼働範囲
       if (baseEnd.isAfter(secondRangeStart)) {
         ranges.push([secondRangeStart, baseEnd]);
       }
@@ -315,7 +316,7 @@ export default function StaffShiftPage() {
       while (slotStart.isBefore(rangeEnd)) {
         const slotEnd = slotStart.clone().add(interval, 'minute');
         if (slotEnd.isAfter(rangeEnd)) {
-          break; // インターバルがオーバーしたら終了
+          break;
         }
         timeSlots.push([slotStart, slotEnd]);
         slotStart = slotEnd;
@@ -327,7 +328,6 @@ export default function StaffShiftPage() {
 
   // 曜日チェックがオンかどうか判定
   const isDaySelected = (dateObj) => {
-    // Sunday=0, Monday=1, ... で取り出す
     const dayIndex = dateObj.day(); // 0(日) ~ 6(土)
     switch (dayIndex) {
       case 0: return daysOfWeek.sun;
@@ -365,23 +365,13 @@ export default function StaffShiftPage() {
       return;
     }
 
-    // シフトをまとめて作成
-    // startDateからendDateまで1日ずつ進めて、チェックされている曜日なら自動分割処理
     const shiftPhotoKey = selectedStaff.photo || '';
     let currentDate = repeatStartDate.clone();
 
     const confirmations = [];
 
-    // ▼ プラグインを使わずに day 単位の比較をする場合でもOK
-    //   while (currentDate.diff(repeatEndDate, 'day') <= 0) {
-    //     ...
-    //   }
-    //
-    // 今回は isSameOrBefore プラグインを使って記述:
     while (currentDate.isSameOrBefore(repeatEndDate, 'day')) {
-      // 曜日がチェックされていたら処理
       if (isDaySelected(currentDate)) {
-        // 当該日の開始・終了
         const dayStart = autoStartTime
           .clone()
           .year(currentDate.year())
@@ -394,7 +384,6 @@ export default function StaffShiftPage() {
           .month(currentDate.month())
           .date(currentDate.date());
 
-        // 休憩開始・休憩終了も同日の時刻として調整
         let bStart = null;
         let bEnd = null;
         if (breakStartTime && breakEndTime && breakEndTime.isAfter(breakStartTime)) {
@@ -420,7 +409,6 @@ export default function StaffShiftPage() {
           bEnd
         );
 
-        // それぞれのスロットに対してShift作成
         const dateStr = currentDate.format('YYYY-MM-DD');
         const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
 
@@ -428,7 +416,6 @@ export default function StaffShiftPage() {
           const startISO = s.toISOString();
           const endISO = e.toISOString();
 
-          // ここで DataStore.save をまとめて実行する（順次処理）
           const createPromise = DataStore.save(
             new Shift({
               staffID: selectedStaff.id,
@@ -438,15 +425,15 @@ export default function StaffShiftPage() {
               endTime: endISO,
               photo: shiftPhotoKey,
               details: autoShiftDetail,
+              capacity: autoShiftCapacity, // ★ 自動生成シフトの定員
             })
           );
           confirmations.push(createPromise);
         }
       }
-      currentDate = currentDate.add(1, 'day'); // 1日進める
+      currentDate = currentDate.add(1, 'day');
     }
 
-    // 一気に保存を待つ
     try {
       await Promise.all(confirmations);
       alert('自動分割シフトを登録しました。');
@@ -624,7 +611,7 @@ export default function StaffShiftPage() {
                     <Grid item>
                       <TimePicker
                         label="開始時刻(24h)"
-                        ampm={false}             // ★ 24時間表示
+                        ampm={false}  // 24時間表示
                         value={startTime}
                         onChange={(newVal) => setStartTime(newVal)}
                       />
@@ -632,7 +619,7 @@ export default function StaffShiftPage() {
                     <Grid item>
                       <TimePicker
                         label="終了時刻(24h)"
-                        ampm={false}             // ★ 24時間表示
+                        ampm={false}  // 24時間表示
                         value={endTime}
                         onChange={(newVal) => setEndTime(newVal)}
                       />
@@ -641,13 +628,24 @@ export default function StaffShiftPage() {
                 </LocalizationProvider>
 
                 <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       label="シフトの詳細"
                       multiline
                       rows={2}
                       value={shiftDetail}
                       onChange={(e) => setShiftDetail(e.target.value)}
+                      fullWidth
+                    />
+                  </Grid>
+
+                  {/* ★ 定員を指定 */}
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="定員"
+                      type="number"
+                      value={shiftCapacity}
+                      onChange={(e) => setShiftCapacity(parseInt(e.target.value, 10) || 1)}
                       fullWidth
                     />
                   </Grid>
@@ -728,7 +726,7 @@ export default function StaffShiftPage() {
                     <Grid item xs={6} sm={3}>
                       <TimePicker
                         label="シフト開始(24h)"
-                        ampm={false}  // ★ 24時間表示
+                        ampm={false}
                         value={autoStartTime}
                         onChange={(newVal) => setAutoStartTime(newVal)}
                       />
@@ -736,7 +734,7 @@ export default function StaffShiftPage() {
                     <Grid item xs={6} sm={3}>
                       <TimePicker
                         label="シフト終了(24h)"
-                        ampm={false}  // ★ 24時間表示
+                        ampm={false}
                         value={autoEndTime}
                         onChange={(newVal) => setAutoEndTime(newVal)}
                       />
@@ -744,7 +742,7 @@ export default function StaffShiftPage() {
                     <Grid item xs={6} sm={3}>
                       <TimePicker
                         label="休憩開始(24h)"
-                        ampm={false}  // ★ 24時間表示
+                        ampm={false}
                         value={breakStartTime}
                         onChange={(newVal) => setBreakStartTime(newVal)}
                       />
@@ -752,7 +750,7 @@ export default function StaffShiftPage() {
                     <Grid item xs={6} sm={3}>
                       <TimePicker
                         label="休憩終了(24h)"
-                        ampm={false}  // ★ 24時間表示
+                        ampm={false}
                         value={breakEndTime}
                         onChange={(newVal) => setBreakEndTime(newVal)}
                       />
@@ -770,7 +768,16 @@ export default function StaffShiftPage() {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={12} sm={9}>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="定員"
+                      type="number"
+                      value={autoShiftCapacity}
+                      onChange={(e) => setAutoShiftCapacity(parseInt(e.target.value, 10) || 1)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       label="シフトの詳細"
                       multiline
@@ -815,6 +822,7 @@ export default function StaffShiftPage() {
                   <TableCell>シフト詳細</TableCell>
                   <TableCell>施設詳細</TableCell>
                   <TableCell>写真</TableCell>
+                  <TableCell>定員</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -826,12 +834,9 @@ export default function StaffShiftPage() {
                       <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
                       <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
                       <TableCell>{shift.details || ''}</TableCell>
-
-                      {/* 施設詳細（Staff.description） */}
                       <TableCell>
                         {selectedStaff?.description || ''}
                       </TableCell>
-
                       <TableCell>
                         {shift.photoURL ? (
                           <img
@@ -843,6 +848,7 @@ export default function StaffShiftPage() {
                           'なし'
                         )}
                       </TableCell>
+                      <TableCell>{shift.capacity ?? ''}</TableCell>
                     </TableRow>
                   ))}
               </TableBody>

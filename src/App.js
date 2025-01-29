@@ -21,7 +21,7 @@ import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/materi
 
 // ページコンポーネント（例）
 import StaffShiftPage from './pages/StaffShiftPage';
-import BookingPage from './pages/BookingPage';
+// BookingPage は削除
 import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
@@ -141,7 +141,7 @@ function App() {
     const unsubscribe = Hub.listen('auth', async (data) => {
       const { payload } = data;
       console.log('=== Hub event ===', payload.event, payload);
-      if (['signedIn'].includes(payload.event)) {
+      if (payload.event === 'signIn' || payload.event === 'signUp') {
         // 再度セッション取得
         await checkCurrentUser();
         // ログインが完了したらすぐにトップページへ
@@ -158,7 +158,7 @@ function App() {
 
     // アンマウント時にリスナー解除
     return () => {
-      unsubscribe(); // Hub.remove() は使わず、返り値の関数で解除する
+      unsubscribe();
     };
   }, [navigate]);
 
@@ -191,13 +191,11 @@ function App() {
               シフト一覧
             </Button>
 
-            <Button color="inherit" component={Link} to="/booking">
-              予約
-            </Button>
+            {/* 予約ボタンは削除済み */}
 
             {isAdmin && (
               <Button color="inherit" component={Link} to="/staff-shift">
-                予約登録
+                予約管理
               </Button>
             )}
 
@@ -223,8 +221,7 @@ function App() {
           <Box sx={{ mb: 2 }}>
             {isAuthenticated ? (
               <Typography variant="body2" color="textSecondary">
-                ログイン中: {username}{' '}
-                {isAdmin ? '(管理者)' : '(一般ユーザー)'}
+                ログイン中: {username} {isAdmin ? '(管理者)' : '(一般ユーザー)'}
               </Typography>
             ) : (
               <Typography variant="body2" color="textSecondary">
@@ -249,17 +246,7 @@ function App() {
               }
             />
 
-            {/* 予約ページ */}
-            <Route
-              path="/booking"
-              element={
-                isAuthenticated ? (
-                  <BookingPage />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
+            {/* 予約ページの Route は削除済み */}
 
             {/* スタッフ管理ページ (Adminのみ) */}
             <Route

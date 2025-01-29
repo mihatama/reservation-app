@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 
+// Auth 情報を取得するため
 import { fetchAuthSession } from '@aws-amplify/auth';
-
 
 import { Staff, Shift, Reservation } from '../models';
 import {
@@ -33,7 +33,9 @@ export default function BookingPage() {
   const [userSub, setUserSub] = useState('');
   const [userFullName, setUserFullName] = useState('');
 
-  // ログインユーザーの情報を取得
+  // -------------------------
+  // 1. ログインユーザーの情報を取得
+  // -------------------------
   useEffect(() => {
     getUserInfo();
   }, []);
@@ -48,22 +50,50 @@ export default function BookingPage() {
       // 姓・名の属性をまとめて予約名に利用
       const familyName = session.getIdToken().payload.family_name || '';
       const givenName = session.getIdToken().payload.given_name || '';
-      setUserFullName(`${familyName} ${givenName}`);
+      setUserFullName(`${familyName} ${givenName}`.trim());
     } catch (err) {
       console.error('Fail to fetch session', err);
     }
   };
 
-  // スタッフ一覧を購読
+  // -------------------------
+  // 2. スタッフ一覧を購読
+  // -------------------------
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
+      // hidden=false のスタッフのみ表示したい場合
       const visibleStaff = items.filter((s) => s.hidden === false);
       setStaffList(visibleStaff);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // シフトを取得
+  // -------------------------
+  // 3. シフト・予約変更を購読して、カレンダーを再取得
+  // -------------------------
+  // スタッフと日付が選択されている場合のみ、有効にする
+  useEffect(() => {
+    if (!selectedStaff || !selectedDate) return;
+
+    const staffIDDate = `${selectedStaff.id}_${selectedDate.format('YYYY-MM-DD')}`;
+
+    // Reservation テーブルに変更があったらシフトを再取得
+    const reservationSub = DataStore.observeQuery(
+      Reservation,
+      (r) => r.staffID_date.eq(staffIDDate)
+    ).subscribe(() => {
+      // 変更があれば最新のシフト情報を再取得
+      fetchShifts();
+    });
+
+    return () => {
+      reservationSub.unsubscribe();
+    };
+  }, [selectedStaff, selectedDate]);
+
+  // -------------------------
+  // 4. シフトを取得（予約されていない枠だけを抽出）
+  // -------------------------
   const fetchShifts = async () => {
     if (!selectedStaff || !selectedDate) {
       alert('スタッフと日付を指定してください。');
@@ -72,20 +102,49 @@ export default function BookingPage() {
     const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
 
-    const allShifts = await DataStore.query(Shift, (s) =>
-      s.staffID_date.eq(staffIDDate)
-    );
-    const filtered = allShifts.filter((shift) => shift.date === dateStr);
-    setAvailableShifts(filtered);
+    try {
+      // 当該スタッフ・日付のシフト
+      const allShifts = await DataStore.query(Shift, (s) =>
+        s.staffID_date.eq(staffIDDate)
+      );
+
+      // 予約情報のうち、同じスタッフ・日付に紐づくもの
+      const reservations = await DataStore.query(Reservation, (r) =>
+        r.staffID_date.eq(staffIDDate)
+      );
+
+      // 予約済みの(開始時間, 終了時間)を判定して、すでに予約が入っているシフトは表示から除外
+      const available = allShifts.filter((shift) => {
+        // 同じ時間帯が予約されているかどうか
+        const isReserved = reservations.some(
+          (res) =>
+            res.startTime === shift.startTime &&
+            res.endTime === shift.endTime
+        );
+        return !isReserved;
+      });
+
+      // 同日付のみに絞りつつ、並び替え用に sort
+      const filtered = available.filter((shift) => shift.date === dateStr);
+      const sorted = filtered.sort((a, b) => (a.startTime > b.startTime ? 1 : -1));
+
+      setAvailableShifts(sorted);
+    } catch (error) {
+      console.error('シフト取得中にエラー:', error);
+      alert('シフトを取得できませんでした。');
+    }
   };
 
-  // 予約を作成
+  // -------------------------
+  // 5. 予約を作成
+  // -------------------------
   const createReservation = async (shift) => {
     if (!userSub) {
       alert('予約にはログインが必要です。');
       return;
     }
 
+    // 実際には、二重予約チェック等を行いたい場合はここで再度 Reservation を確認してもよい
     try {
       const staffID_dateValue = `${shift.staffID}_${shift.date}`;
       await DataStore.save(
@@ -100,12 +159,24 @@ export default function BookingPage() {
         })
       );
       alert('予約が完了しました。');
+
+      // 予約作成後、即座に該当シフトを UI から除外したい場合は、以下のように手動で除外する:
+      setAvailableShifts((prev) =>
+        prev.filter(
+          (s) =>
+            !(s.startTime === shift.startTime && s.endTime === shift.endTime)
+        )
+      );
+      // ただし、上の observeQuery が発火して自動的に更新が入るので、ここは省略しても OK
     } catch (error) {
       console.error('予約作成中にエラー:', error);
       alert('予約作成に失敗しました。');
     }
   };
 
+  // -------------------------
+  // 6. 画面表示
+  // -------------------------
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
@@ -157,7 +228,7 @@ export default function BookingPage() {
         </Typography>
         {availableShifts.length === 0 ? (
           <Typography variant="body2" color="textSecondary">
-            シフトがありません。
+            シフトがありません、あるいは全て予約済みです。
           </Typography>
         ) : (
           <TableContainer component={Paper}>
@@ -171,24 +242,25 @@ export default function BookingPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {availableShifts
-                  .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
-                  .map((shift) => (
-                    <TableRow key={shift.id}>
-                      <TableCell>{shift.date}</TableCell>
-                      <TableCell>
-                        {dayjs(shift.startTime).format('HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        {dayjs(shift.endTime).format('HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outlined" onClick={() => createReservation(shift)}>
-                          この枠で予約
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {availableShifts.map((shift) => (
+                  <TableRow key={shift.id}>
+                    <TableCell>{shift.date}</TableCell>
+                    <TableCell>
+                      {dayjs(shift.startTime).format('HH:mm')}
+                    </TableCell>
+                    <TableCell>
+                      {dayjs(shift.endTime).format('HH:mm')}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        onClick={() => createReservation(shift)}
+                      >
+                        この枠で予約
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

@@ -83,6 +83,7 @@ type EagerShift = {
   readonly endTime?: string | null;
   readonly photo?: string | null;
   readonly details?: string | null;
+  readonly capacity?: number | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -100,6 +101,7 @@ type LazyShift = {
   readonly endTime?: string | null;
   readonly photo?: string | null;
   readonly details?: string | null;
+  readonly capacity?: number | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }

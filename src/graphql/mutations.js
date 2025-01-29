@@ -129,6 +129,7 @@ export const createShift = /* GraphQL */ `
       endTime
       photo
       details
+      capacity
       createdAt
       updatedAt
       _version
@@ -152,6 +153,7 @@ export const updateShift = /* GraphQL */ `
       endTime
       photo
       details
+      capacity
       createdAt
       updatedAt
       _version
@@ -175,6 +177,7 @@ export const deleteShift = /* GraphQL */ `
       endTime
       photo
       details
+      capacity
       createdAt
       updatedAt
       _version

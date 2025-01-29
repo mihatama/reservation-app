@@ -33,6 +33,7 @@ type Shift
   endTime: String
   photo: String
   details: String
+  capacity: Int
 }
 
 type Reservation

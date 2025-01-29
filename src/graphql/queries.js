@@ -156,6 +156,7 @@ export const getShift = /* GraphQL */ `
       endTime
       photo
       details
+      capacity
       createdAt
       updatedAt
       _version
@@ -181,6 +182,7 @@ export const listShifts = /* GraphQL */ `
         endTime
         photo
         details
+        capacity
         createdAt
         updatedAt
         _version
@@ -216,6 +218,7 @@ export const syncShifts = /* GraphQL */ `
         endTime
         photo
         details
+        capacity
         createdAt
         updatedAt
         _version
