@@ -137,13 +137,15 @@ export default function StaffCalendarPage() {
           setShifts(snapshot.items);
         });
 
-      // Reservationの購読
-      const reservationSubscription = DataStore.observeQuery(
-        Reservation,
-        (r) => r.staffID.eq(staffId)
-      ).subscribe((snapshot) => {
-        setReservations(snapshot.items);
-      });
+      /**
+       * Reservationの購読
+       *   - システム全体の予約を取得しておけば、「同じ時間帯のダブルブッキング」チェックが可能
+       *   - もし「同じStaffのみを制限」したい場合は元のように staffID で絞る
+       */
+      const reservationSubscription = DataStore.observeQuery(Reservation)
+        .subscribe((snapshot) => {
+          setReservations(snapshot.items);
+        });
 
       return () => {
         staffSubscription.unsubscribe();
@@ -170,6 +172,7 @@ export default function StaffCalendarPage() {
 
   // シフトごとの予約数をカウント
   const getShiftReservationCount = (shift) => {
+    // そのシフト(staffID, date, startTime, endTime)に紐づく予約を算出
     return reservations.filter(
       (res) =>
         res.staffID === shift.staffID &&
@@ -206,6 +209,7 @@ export default function StaffCalendarPage() {
       alert('ログインが必要です。');
       return;
     }
+
     const confirmBook = window.confirm(
       `このシフトを予約しますか？\n\n${dayjs(event.start).format('YYYY/MM/DD HH:mm')} ~ ${dayjs(event.end).format('HH:mm')}`
     );
@@ -217,7 +221,28 @@ export default function StaffCalendarPage() {
       return;
     }
 
+    // ここで「同一人物が同じ時間帯に予約を持っていないか」をチェックする
     try {
+      const shiftStart = new Date(shiftObj.startTime);
+      const shiftEnd = new Date(shiftObj.endTime);
+
+      // ログイン中ユーザの既存予約（システム全体）を取得
+      // 同じ時間帯にかかっているかどうかを判定
+      const userExistingReservations = reservations.filter((res) => res.owner === userSub);
+
+      const hasOverlap = userExistingReservations.some((res) => {
+        const existingStart = new Date(res.startTime);
+        const existingEnd = new Date(res.endTime);
+        // 「開始が既存予約の終了より前」かつ「終了が既存予約の開始より後」であれば重複
+        return shiftStart < existingEnd && shiftEnd > existingStart;
+      });
+
+      if (hasOverlap) {
+        alert('既に同じ時間帯で予約が入っています。');
+        return;
+      }
+
+      // 重複がなければ予約を作成する
       const staffID_dateValue = `${shiftObj.staffID}_${shiftObj.date}`;
       await DataStore.save(
         new Reservation({
@@ -232,7 +257,7 @@ export default function StaffCalendarPage() {
       );
 
       // 予約後に定員に達したかどうかチェック
-      const countAfter = getShiftReservationCount(shiftObj) + 1; // 今の予約を加味するため +1
+      const countAfter = getShiftReservationCount(shiftObj) + 1; // 今の予約を加味
       const cap = shiftObj.capacity;
 
       if (cap != null && countAfter >= cap) {
