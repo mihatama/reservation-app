@@ -1,7 +1,7 @@
 // ==========================
 // ファイル先頭へ import を集約
 // ==========================
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift, Reservation } from '../models';
 import { uploadData, getUrl } from '@aws-amplify/storage';
@@ -184,6 +184,11 @@ export default function StaffShiftPage() {
   const [allShifts, setAllShifts] = useState([]);
   const [allReservations, setAllReservations] = useState([]);
 
+  // 複数施設をカレンダーに表示するための選択状態
+  const [selectedStaffIdsForCalendar, setSelectedStaffIdsForCalendar] = useState(
+    []
+  );
+
   // =====================================
   // ユーザー認証情報・管理者判定
   // =====================================
@@ -192,7 +197,8 @@ export default function StaffShiftPage() {
       try {
         const session = await fetchAuthSession();
         // groups から管理者判定
-        const groups = session?.tokens?.idToken?.payload?.['cognito:groups'] || [];
+        const groups =
+          session?.tokens?.idToken?.payload?.['cognito:groups'] || [];
         setIsAdmin(groups.includes('admin'));
       } catch (err) {
         console.error('Fail to fetch session', err);
@@ -205,22 +211,27 @@ export default function StaffShiftPage() {
   // 施設 (Staff) の購読
   // =====================================
   useEffect(() => {
-    const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      const staffWithPhotoUrls = await Promise.all(
-        items.map(async (staff) => {
-          if (staff.photo) {
-            try {
-              const { url } = await getUrl({ key: staff.photo, level: 'public' });
-              return { ...staff, photoURL: url.href };
-            } catch (err) {
-              return { ...staff, photoURL: '' };
+    const subscription = DataStore.observeQuery(Staff).subscribe(
+      async ({ items }) => {
+        const staffWithPhotoUrls = await Promise.all(
+          items.map(async (staff) => {
+            if (staff.photo) {
+              try {
+                const { url } = await getUrl({
+                  key: staff.photo,
+                  level: 'public',
+                });
+                return { ...staff, photoURL: url.href };
+              } catch (err) {
+                return { ...staff, photoURL: '' };
+              }
             }
-          }
-          return { ...staff, photoURL: '' };
-        })
-      );
-      setStaffList(staffWithPhotoUrls);
-    });
+            return { ...staff, photoURL: '' };
+          })
+        );
+        setStaffList(staffWithPhotoUrls);
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
@@ -241,7 +252,10 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const { url } = await getUrl({ key: shift.photo, level: 'public' });
+              const { url } = await getUrl({
+                key: shift.photo,
+                level: 'public',
+              });
               return { ...shift, photoURL: url.href };
             } catch {
               return { ...shift, photoURL: '' };
@@ -419,7 +433,11 @@ export default function StaffShiftPage() {
 
         let bStart = null;
         let bEnd = null;
-        if (breakStartTime && breakEndTime && breakEndTime.isAfter(breakStartTime)) {
+        if (
+          breakStartTime &&
+          breakEndTime &&
+          breakEndTime.isAfter(breakStartTime)
+        ) {
           bStart = breakStartTime
             .clone()
             .year(current.year())
@@ -577,59 +595,95 @@ export default function StaffShiftPage() {
     setDaysOfWeek((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // =======================
-  // カレンダーイベント生成
-  // =======================
-  const calendarEvents = allShifts.map((shift) => {
-    const shiftStart = new Date(shift.startTime);
-    const shiftEnd = new Date(shift.endTime);
+  // =====================================
+  // カレンダーに表示するイベント生成
+  // （予約済みかどうか、施設ごとの色分けにも使用）
+  // =====================================
+  const calendarEvents = useMemo(() => {
+    return allShifts.map((shift) => {
+      const shiftStart = new Date(shift.startTime);
+      const shiftEnd = new Date(shift.endTime);
 
-    const staffObj = staffList.find((s) => s.id === shift.staffID);
-    const name = staffObj ? staffObj.name : '不明施設';
+      const shiftReservations = allReservations.filter(
+        (r) =>
+          r.staffID === shift.staffID &&
+          r.date === shift.date &&
+          r.startTime === shift.startTime &&
+          r.endTime === shift.endTime
+      );
+      const isReserved = shiftReservations.length > 0;
 
-    // 該当予約
-    const shiftReservations = allReservations.filter(
-      (r) =>
-        r.staffID === shift.staffID &&
-        r.date === shift.date &&
-        r.startTime === shift.startTime &&
-        r.endTime === shift.endTime
-    );
+      return {
+        id: shift.id,
+        staffID: shift.staffID,
+        start: shiftStart,
+        end: shiftEnd,
+        reserved: isReserved,
+      };
+    });
+  }, [allShifts, allReservations]);
 
-    let title = '';
-    if (shiftReservations.length === 0) {
-      title = `【未予約】${name}`;
-    } else {
-      const reservedNames = shiftReservations.map((r) => r.clientName).join(', ');
-      title = `【予約済】${name}: ${reservedNames}`;
-    }
+  // 施設ごとの色をマッピング
+  const colors = [
+    '#E53E3E',
+    '#DD6B20',
+    '#D69E2E',
+    '#38A169',
+    '#3182CE',
+    '#805AD5',
+    '#718096',
+    '#4299E1',
+    '#ED64A6',
+    '#ECC94B',
+  ];
 
+  const staffColorMap = useMemo(() => {
+    const map = {};
+    staffList.forEach((staff, index) => {
+      map[staff.id] = colors[index % colors.length];
+    });
+    return map;
+  }, [staffList]);
+
+  // カレンダーイベントのスタイル変更（施設ごとに色分け & 予約で不透明度変更）
+  const eventPropGetter = (event) => {
+    const color = staffColorMap[event.staffID] || '#999';
     return {
-      id: shift.id,
-      staffID: shift.staffID,
-      start: shiftStart,
-      end: shiftEnd,
-      title,
-      capacity: shift.capacity,
+      style: {
+        backgroundColor: color,
+        opacity: event.reserved ? 1.0 : 0.5,
+      },
     };
-  });
+  };
 
-  // =======================
-  // カレンダーイベントクリック
-  // =======================
+  // 選択された施設のみ表示させる
+  const filteredCalendarEvents = useMemo(() => {
+    if (selectedStaffIdsForCalendar.length === 0) {
+      // 何も選択されていない場合は全表示 or 全非表示、要件次第ですが
+      // 「任意で選択でき」とあるので「選択なし=すべて表示」よりも
+      // 「選択しないと何も出ない」方が明確かと思われます。
+      // 必要に応じてどちらか切り替えてください。
+      return [];
+      // もしくは全表示にするなら:
+      // return calendarEvents;
+    }
+    return calendarEvents.filter((ev) =>
+      selectedStaffIdsForCalendar.includes(ev.staffID)
+    );
+  }, [calendarEvents, selectedStaffIdsForCalendar]);
+
+  // カレンダーイベントをクリックしたときの動作
   const handleSelectEvent = async (event) => {
     if (!isAdmin) {
       // 一般ユーザーは操作不可
       alert('管理者権限が必要です。');
       return;
     }
-
     const shiftClicked = allShifts.find((s) => s.id === event.id);
     if (!shiftClicked) {
       alert('シフトが見つかりません');
       return;
     }
-
     // このシフトに紐づく予約
     const shiftReservations = allReservations.filter(
       (r) =>
@@ -687,6 +741,17 @@ export default function StaffShiftPage() {
         alert('予約作成に失敗しました。');
       }
     }
+  };
+
+  // カレンダーに表示する施設のチェックボックスのトグル
+  const handleToggleStaffForCalendar = (staffId) => {
+    setSelectedStaffIdsForCalendar((prev) => {
+      if (prev.includes(staffId)) {
+        return prev.filter((id) => id !== staffId);
+      } else {
+        return [...prev, staffId];
+      }
+    });
   };
 
   // ================================
@@ -830,11 +895,7 @@ export default function StaffShiftPage() {
                   </Grid>
                 </Grid>
 
-                <Button
-                  variant="contained"
-                  onClick={createShift}
-                  sx={{ mt: 2 }}
-                >
+                <Button variant="contained" onClick={createShift} sx={{ mt: 2 }}>
                   シフト追加
                 </Button>
               </>
@@ -1023,12 +1084,10 @@ export default function StaffShiftPage() {
         </Grid>
       </Grid>
 
-      {/* 選択施設のシフト一覧 */}
+      {/* 選択施設のシフト一覧 (「さんのシフト一覧」は削除) */}
       {selectedStaff && (
         <Paper sx={{ p: 2, mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            {selectedStaff.name} さんのシフト一覧
-          </Typography>
+          {/* 余計なテキストは削除済み */}
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -1055,9 +1114,7 @@ export default function StaffShiftPage() {
                         {dayjs(shift.endTime).format('HH:mm')}
                       </TableCell>
                       <TableCell>{shift.details || ''}</TableCell>
-                      <TableCell>
-                        {selectedStaff?.description || ''}
-                      </TableCell>
+                      <TableCell>{selectedStaff?.description || ''}</TableCell>
                       <TableCell>
                         {shift.photoURL ? (
                           <img
@@ -1100,14 +1157,34 @@ export default function StaffShiftPage() {
         <Typography variant="h6" gutterBottom>
           全施設・スタッフの予約状況カレンダー
         </Typography>
-        <Typography variant="body2">
+        <Typography variant="body2" sx={{ mb: 2 }}>
           イベントをクリックすると、管理者のみ予約の削除や新規予約が可能です。
         </Typography>
+
+        {/* 施設チェックボックスで絞り込み */}
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle2">カレンダーに表示する施設</Typography>
+          <FormGroup row>
+            {staffList.map((staff) => (
+              <FormControlLabel
+                key={staff.id}
+                control={
+                  <Checkbox
+                    checked={selectedStaffIdsForCalendar.includes(staff.id)}
+                    onChange={() => handleToggleStaffForCalendar(staff.id)}
+                  />
+                }
+                label={staff.name}
+              />
+            ))}
+          </FormGroup>
+        </Paper>
+
         <div style={{ height: '700px', marginTop: '20px' }}>
           <Calendar
             localizer={localizer}
             culture="ja"
-            events={calendarEvents}
+            events={filteredCalendarEvents}
             startAccessor="start"
             endAccessor="end"
             style={{ height: '100%' }}
@@ -1117,6 +1194,7 @@ export default function StaffShiftPage() {
             components={{
               toolbar: CustomToolbar,
             }}
+            eventPropGetter={eventPropGetter}
           />
         </div>
       </Paper>
