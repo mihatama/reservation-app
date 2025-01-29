@@ -1,30 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  Navigate,
-} from 'react-router-dom';
+// React Router の各フック & コンポーネント
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 
-// ※ ここでは Amplify 本体のみ読み込む。Auth 関数は別途 @aws-amplify/auth でインポート
+// Amplify関連
 import { Amplify } from 'aws-amplify';
+import { Hub } from '@aws-amplify/core';
 import awsconfig from './aws-exports';
+import { fetchAuthSession, signOut } from '@aws-amplify/auth';
 
-// Auth 関数だけ別途インポート
-import {
-  fetchAuthSession,
-  signOut,
-} from '@aws-amplify/auth';
-
-// ページコンポーネント
-import StaffShiftPage from './pages/StaffShiftPage';
-import BookingPage from './pages/BookingPage';
-import ShiftListPage from './pages/ShiftListPage';
-import StaffCalendarPage from './pages/StaffCalendarPage';
-import MyReservationsPage from './pages/MyReservationsPage';
-
-// Amplify UI
+// Amplify UI (UIライブラリ)
 import {
   Authenticator,
   ThemeProvider as AmplifyThemeProvider,
@@ -33,31 +17,30 @@ import '@aws-amplify/ui-react/styles.css';
 
 // Material UI
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import { Box, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
+
+// ページコンポーネント（例）
+import StaffShiftPage from './pages/StaffShiftPage';
+import BookingPage from './pages/BookingPage';
+import ShiftListPage from './pages/ShiftListPage';
+import StaffCalendarPage from './pages/StaffCalendarPage';
+import MyReservationsPage from './pages/MyReservationsPage';
 
 // Amplify初期化
 Amplify.configure(awsconfig);
 
-// MUIのテーマ設定
+// Material UI テーマ設定
 const muiTheme = createTheme({
   palette: {
-    primary: {
-      main: '#e91e63', // ピンク
-    },
-    secondary: {
-      main: '#ffa726',
-    },
+    primary: { main: '#e91e63' }, // ピンク
+    secondary: { main: '#ffa726' },
   },
   typography: {
     fontFamily: ['"Helvetica Neue"', 'Arial', 'sans-serif'].join(','),
   },
 });
 
-// Amplify UIテーマ（青色→ピンクに変更）
+// Amplify UIテーマ設定
 const amplifyTheme = {
   name: 'custom-amplify-theme',
   tokens: {
@@ -65,14 +48,14 @@ const amplifyTheme = {
       brand: {
         primary: {
           '10': '#fce4ec', // 薄いピンク
-          '80': '#e91e63', // メインのピンク
+          '80': '#e91e63', // 濃いピンク
         },
       },
     },
   },
 };
 
-// ログイン画面コンポーネント
+// ログイン画面（Authenticator を使う例）
 function LoginPage() {
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
@@ -124,185 +107,187 @@ function LoginPage() {
   );
 }
 
-// Admin向けユーザー追加ページ（例示用の簡易コンポーネント）
-function AddUserPage() {
-  return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        ユーザー追加
-      </Typography>
-      <Typography variant="body1">
-        ここで新規ユーザーを追加する機能を実装できます。
-      </Typography>
-    </Box>
-  );
-}
-
 function App() {
-  const [userGroups, setUserGroups] = useState([]);
-  const [username, setUsername] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userGroups, setUserGroups] = useState([]);
+  const [username, setUsername] = useState('');
 
-  useEffect(() => {
-    checkCurrentUser();
-  }, []);
+  // React Router でプログラム遷移するためのフック
+  const navigate = useNavigate();
 
+  // Cognitoログインセッション確認
   const checkCurrentUser = async () => {
     try {
-      // ログインセッションを取得
       const session = await fetchAuthSession();
-
-      // グループを IDトークン から取得
-      const groups = session.tokens.idToken.payload['cognito:groups'] || [];
+      const payload = session.tokens.idToken.payload;
+      // ユーザーグループ
+      const groups = payload['cognito:groups'] || [];
+      // ユーザー名 (例として email)
+      const currentUsername = payload.email || '';
       setUserGroups(groups);
-
-      // ユーザー名（ここでは email を表示）
-      const currentUsername = session.idToken?.payload?.email || '';
       setUsername(currentUsername);
-
       setIsAuthenticated(true);
     } catch (error) {
-      // 未ログインの場合
+      console.error('checkCurrentUser error:', error);
       setIsAuthenticated(false);
       setUserGroups([]);
-      setUsername(null);
+      setUsername('');
     }
   };
 
+  // Hubイベント（signIn/signUp/signOutなど）を監視
+  useEffect(() => {
+    // Hub.listen() は解除用関数 unsubscribe を返す
+    const unsubscribe = Hub.listen('auth', async (data) => {
+      const { payload } = data;
+      console.log('=== Hub event ===', payload.event, payload);
+      if (['signedIn'].includes(payload.event)) {
+        // 再度セッション取得
+        await checkCurrentUser();
+        // ログインが完了したらすぐにトップページへ
+        navigate('/');
+      } else if (payload.event === 'signOut') {
+        setIsAuthenticated(false);
+        setUsername('');
+        setUserGroups([]);
+      }
+    });
+
+    // マウント時に一度だけセッションチェック
+    checkCurrentUser();
+
+    // アンマウント時にリスナー解除
+    return () => {
+      unsubscribe(); // Hub.remove() は使わず、返り値の関数で解除する
+    };
+  }, [navigate]);
+
+  // サインアウト
   const handleSignOut = async () => {
     try {
-      // モジュール式の signOut を呼ぶ
       await signOut();
       setIsAuthenticated(false);
-      setUsername(null);
+      setUsername('');
       setUserGroups([]);
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
+  // Admin判定 (例)
   const isAdmin = userGroups.includes('Admin');
 
   return (
     <AmplifyThemeProvider theme={amplifyTheme}>
       <MuiThemeProvider theme={muiTheme}>
-        <Router>
-          <AppBar position="static">
-            <Toolbar>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                助産院 予約管理アプリ
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              助産院 予約管理アプリ
+            </Typography>
+
+            {/* 右側のメニュー */}
+            <Button color="inherit" component={Link} to="/">
+              シフト一覧
+            </Button>
+
+            <Button color="inherit" component={Link} to="/booking">
+              予約
+            </Button>
+
+            {isAdmin && (
+              <Button color="inherit" component={Link} to="/staff-shift">
+                予約登録
+              </Button>
+            )}
+
+            {isAuthenticated && (
+              <Button color="inherit" component={Link} to="/my-reservations">
+                マイ予約
+              </Button>
+            )}
+
+            {isAuthenticated ? (
+              <Button color="inherit" onClick={handleSignOut}>
+                サインアウト
+              </Button>
+            ) : (
+              <Button color="inherit" component={Link} to="/login">
+                ログイン
+              </Button>
+            )}
+          </Toolbar>
+        </AppBar>
+
+        <Container sx={{ mt: 4 }}>
+          <Box sx={{ mb: 2 }}>
+            {isAuthenticated ? (
+              <Typography variant="body2" color="textSecondary">
+                ログイン中: {username}{' '}
+                {isAdmin ? '(管理者)' : '(一般ユーザー)'}
               </Typography>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                ログインしていません
+              </Typography>
+            )}
+          </Box>
 
-              <Button color="inherit" component={Link} to="/">
-                シフト一覧
-              </Button>
+          <Routes>
+            {/* トップページ */}
+            <Route path="/" element={<ShiftListPage />} />
 
-              <Button color="inherit" component={Link} to="/booking">
-                予約
-              </Button>
+            {/* スタッフ別カレンダー */}
+            <Route
+              path="/calendar/:staffId"
+              element={
+                isAuthenticated ? (
+                  <StaffCalendarPage />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
 
-              {isAdmin && (
-                <Button color="inherit" component={Link} to="/staff-shift">
-                  スタッフ管理
-                </Button>
-              )}
+            {/* 予約ページ */}
+            <Route
+              path="/booking"
+              element={
+                isAuthenticated ? (
+                  <BookingPage />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
 
-              {isAdmin && (
-                <Button color="inherit" component={Link} to="/add-user">
-                  ユーザー追加
-                </Button>
-              )}
+            {/* スタッフ管理ページ (Adminのみ) */}
+            <Route
+              path="/staff-shift"
+              element={isAdmin ? <StaffShiftPage /> : <Navigate to="/" />}
+            />
 
-              {isAuthenticated && (
-                <Button color="inherit" component={Link} to="/my-reservations">
-                  マイ予約
-                </Button>
-              )}
+            {/* マイ予約確認ページ */}
+            <Route
+              path="/my-reservations"
+              element={
+                isAuthenticated ? (
+                  <MyReservationsPage />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
 
-              {isAuthenticated ? (
-                <Button color="inherit" onClick={handleSignOut}>
-                  サインアウト
-                </Button>
-              ) : (
-                <Button color="inherit" component={Link} to="/login">
-                  ログイン
-                </Button>
-              )}
-            </Toolbar>
-          </AppBar>
-
-          <Container sx={{ mt: 4 }}>
-            <Box sx={{ mb: 2 }}>
-              {isAuthenticated ? (
-                <Typography variant="body2" color="textSecondary">
-                  ログイン中: {username}{' '}
-                  {isAdmin ? '(管理者)' : '(一般ユーザー)'}
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="textSecondary">
-                  ログインしていません
-                </Typography>
-              )}
-            </Box>
-
-            <Routes>
-              {/* シフト一覧ページ（トップ） */}
-              <Route path="/" element={<ShiftListPage />} />
-
-              {/* スタッフ別カレンダー */}
-              <Route
-                path="/calendar/:staffId"
-                element={
-                  isAuthenticated ? (
-                    <StaffCalendarPage />
-                  ) : (
-                    <Navigate to="/login" />
-                  )
-                }
-              />
-
-              {/* 予約ページ */}
-              <Route
-                path="/booking"
-                element={
-                  isAuthenticated ? <BookingPage /> : <Navigate to="/login" />
-                }
-              />
-
-              {/* スタッフ管理ページ (Adminのみ) */}
-              <Route
-                path="/staff-shift"
-                element={isAdmin ? <StaffShiftPage /> : <Navigate to="/" />}
-              />
-
-              {/* ユーザー追加ページ (Adminのみ) */}
-              <Route
-                path="/add-user"
-                element={isAdmin ? <AddUserPage /> : <Navigate to="/" />}
-              />
-
-              {/* マイ予約確認ページ */}
-              <Route
-                path="/my-reservations"
-                element={
-                  isAuthenticated ? (
-                    <MyReservationsPage />
-                  ) : (
-                    <Navigate to="/login" />
-                  )
-                }
-              />
-
-              {/* ログインページ：認証済みならトップにリダイレクト */}
-              <Route
-                path="/login"
-                element={
-                  isAuthenticated ? <Navigate to="/" /> : <LoginPage />
-                }
-              />
-            </Routes>
-          </Container>
-        </Router>
+            {/* ログインページ */}
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? <Navigate to="/" /> : <LoginPage />
+              }
+            />
+          </Routes>
+        </Container>
       </MuiThemeProvider>
     </AmplifyThemeProvider>
   );

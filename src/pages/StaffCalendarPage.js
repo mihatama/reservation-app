@@ -17,9 +17,6 @@ import dayjs from 'dayjs';
 // Auth関数 (モジュール式)
 import { fetchAuthSession } from '@aws-amplify/auth';
 
-// 不要なら削除
-// import { Storage } from 'aws-amplify';
-
 const locales = { ja };
 
 const localizer = dateFnsLocalizer({
@@ -65,11 +62,12 @@ export default function StaffCalendarPage() {
   const getUserInfo = async () => {
     try {
       const session = await fetchAuthSession();
-      const sub = session.idToken?.payload?.sub || '';
+      // ★ 修正ポイント: session.tokens.idToken.payload から sub を取得する
+      const sub = session?.tokens?.idToken?.payload?.sub || '';
       setUserSub(sub);
 
-      const familyName = session.idToken?.payload?.family_name || '';
-      const givenName = session.idToken?.payload?.given_name || '';
+      const familyName = session?.tokens?.idToken?.payload?.family_name || '';
+      const givenName = session?.tokens?.idToken?.payload?.given_name || '';
       setUserFullName(`${familyName} ${givenName}`);
     } catch (err) {
       console.error('Fail to fetch session', err);
@@ -90,6 +88,7 @@ export default function StaffCalendarPage() {
 
   // シフトクリック => 予約
   const handleSelectEvent = async (event) => {
+    // ここで userSub が取れていなければ「ログインが必要」となる
     if (!userSub) {
       alert('ログインが必要です。');
       return;
