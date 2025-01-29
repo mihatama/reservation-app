@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff } from '../models';
-// Storage の getUrl を使用
 import { getUrl } from '@aws-amplify/storage';
 
 import {
@@ -19,7 +18,10 @@ export default function ShiftListPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // DataStore.observeQuery(Staff) を購読
     const staffSub = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
+      console.log('observeQuery で Staff アイテムを受信:', items);
+
       // 1) staff.photo から S3 URL を生成
       const staffWithUrls = await Promise.all(
         items.map(async (staff) => {
@@ -27,16 +29,35 @@ export default function ShiftListPage() {
             try {
               // どのキーを見に行っているかログを出す
               console.log('Fetching URL for key:', staff.photo);
-
+              console.log('staff.photoの中身:', (staff.photo, { level: 'public' }));
               // getUrlを呼び出す
-              const { url } = await getUrl(staff.photo, { level: 'public' });
+              const { url } = await getUrl({ key: staff.photo, level: 'public' });
 
               // 生成されたURLを表示
-              console.log('Fetched URL:', url);
+              console.log('Fetched URL:', url.href);
 
-              return { ...staff, photoURL: url };
+              // 正常に取得できたら staff.photoURL に反映
+              return { ...staff, photoURL: url.href};
+
             } catch (err) {
-              console.error('写真URL取得エラー:', err);
+              // エラー詳細をなるべく詳しく出力
+              console.error('写真URL取得エラーが発生しました。');
+              console.error('エラー内容:', err);
+              console.error('エラーが発生したスタッフID:', staff.id);
+              console.error('エラーが発生したキー:', staff.photo);
+
+              // err がオブジェクトの場合、コードやメッセージ、スタックトレースなど
+              if (err.code) {
+                console.error('AWS Error Code:', err.code);
+              }
+              if (err.message) {
+                console.error('AWS Error Message:', err.message);
+              }
+              if (err.stack) {
+                console.error('スタックトレース:', err.stack);
+              }
+
+              // 取れなかった場合はプレースホルダ画像を使う
               return { ...staff, photoURL: placeholder };
             }
           } else {

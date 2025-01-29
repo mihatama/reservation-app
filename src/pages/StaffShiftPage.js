@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift } from '../models';
 
-// ★ Storage を Amplify からインポートする
+// ★ Storage 関連は `@aws-amplify/storage` から個別にインポート
 import { uploadData, getUrl } from '@aws-amplify/storage';
 
 import {
@@ -53,19 +53,19 @@ export default function StaffShiftPage() {
   // ----------------------------------------
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
-      // staff.photo からURLを取得
       const staffWithPhotoUrls = await Promise.all(
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              // Storage.get を使用してURL取得
-              const url = await getUrl({
-                ey: staff.photo,
-                level: 'public',
-                });
-              return { ...staff, photoURL: url };
+              // getUrl でダウンロード用URLを取得
+              // 戻り値は { url: URLオブジェクト } のため、url.href を使う
+              const { url } = await getUrl({
+                key: staff.photo,
+                level: 'public'
+              });
+              return { ...staff, photoURL: url.href };
             } catch (err) {
-              console.error('写真URL取得エラー:', err);
+              console.error('スタッフ写真URL取得エラー:', err);
               return { ...staff, photoURL: '' };
             }
           }
@@ -94,8 +94,11 @@ export default function StaffShiftPage() {
         items.map(async (shift) => {
           if (shift.photo) {
             try {
-              const url = await getUrl({ key: shift.photo, level: 'public' });
-              return { ...shift, photoURL: url };
+              const { url } = await getUrl({
+                key: shift.photo,
+                level: 'public'
+              });
+              return { ...shift, photoURL: url.href };
             } catch {
               return { ...shift, photoURL: '' };
             }
@@ -122,13 +125,31 @@ export default function StaffShiftPage() {
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        // Amplify Storage.put でアップロード
-        await uploadData({
+
+        // File → ArrayBuffer に変換（0B問題を回避するため）
+        const arrayBuffer = await staffPhotoFile.arrayBuffer();
+
+        // ★★★ コンソールでアップロード前の情報を確認 ★★★
+        console.log('=== Debug: Uploading staff photo ===');
+        console.log('key:', fileName);
+        console.log('contentType:', staffPhotoFile.type);
+        console.log('fileSize:', staffPhotoFile.size);
+        console.log('arrayBuffer byteLength:', arrayBuffer.byteLength);
+
+        // uploadData でアップロード
+        // await uploadData({
+        //   key: fileName,
+        //   body: arrayBuffer,      // ArrayBufferを指定
+        //   contentType: staffPhotoFile.type,
+        //   level: 'public'
+        // });        // uploadData でアップロード
+        const result = await uploadData({
           key: fileName,
-          body: staffPhotoFile,
-          contentType: staffPhotoFile.type,
-          level: 'public',
-          });
+          data: staffPhotoFile
+        });
+
+        console.log('Photo upload success',result);
+
         photoKey = fileName;
       } catch (err) {
         console.error('スタッフ写真のアップロードエラー:', err);
@@ -191,7 +212,7 @@ export default function StaffShiftPage() {
     const endISO = end.toISOString();
 
     const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-    // シフトではスタッフと同じ photoKey を流用
+    // シフトの写真をスタッフと同じキーで流用する例
     const shiftPhotoKey = selectedStaff.photo || '';
 
     try {
