@@ -1,11 +1,7 @@
-// ==========================
-// ファイル先頭へ import を集約
-// ==========================
 import React, { useEffect, useState, useMemo } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Staff, Shift, Reservation } from '../models';
 import { uploadData, getUrl } from '@aws-amplify/storage';
-
 import {
   TextField,
   Button,
@@ -28,96 +24,50 @@ import {
   Checkbox,
   FormGroup,
 } from '@mui/material';
-
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import ja from 'date-fns/locale/ja';
 
 dayjs.extend(isSameOrBefore);
-
-// date-fns の日本語ロケール設定
 const locales = { ja: ja };
-
-// dateFnsLocalizer で日本語ロケールを利用
 const localizer = dateFnsLocalizer({
-  format: (date, pattern, options) =>
-    format(date, pattern, { locale: ja, ...options }),
-  parse: (value, pattern, baseDate, options) =>
-    parse(value, pattern, baseDate, { locale: ja, ...options }),
-  startOfWeek: (date, options) =>
-    startOfWeek(date, { locale: ja, ...options }),
+  format: (date, pattern, options) => format(date, pattern, { locale: ja, ...options }),
+  parse: (value, pattern, baseDate, options) => parse(value, pattern, baseDate, { locale: ja, ...options }),
+  startOfWeek: (date, options) => startOfWeek(date, { locale: ja, ...options }),
   getDay,
   locales,
 });
 
-/**
- * カレンダーの独自ツールバー
- */
 function CustomToolbar(props) {
   const { label } = props;
-
-  const goToPrev = () => {
-    props.onNavigate('PREV');
-  };
-  const goToNext = () => {
-    props.onNavigate('NEXT');
-  };
-  const goToToday = () => {
-    props.onNavigate('TODAY');
-  };
-
-  const goToMonth = () => {
-    props.onView('month');
-  };
-  const goToWeek = () => {
-    props.onView('week');
-  };
-  const goToDay = () => {
-    props.onView('day');
-  };
-
+  const goToPrev = () => props.onNavigate('PREV');
+  const goToNext = () => props.onNavigate('NEXT');
+  const goToToday = () => props.onNavigate('TODAY');
+  const goToMonth = () => props.onView('month');
+  const goToWeek = () => props.onView('week');
+  const goToDay = () => props.onView('day');
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '10px',
-      }}
-    >
-      {/* 左側: 前へ / 今日 / 次へ */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
       <div>
         <Button onClick={goToPrev} variant="outlined" sx={{ mr: 1 }}>
           ◀
         </Button>
-        <Button
-          onClick={goToToday}
-          variant="contained"
-          color="primary"
-          sx={{ mr: 1 }}
-        >
+        <Button onClick={goToToday} variant="contained" color="primary" sx={{ mr: 1 }}>
           今日
         </Button>
         <Button onClick={goToNext} variant="outlined">
           ▶
         </Button>
       </div>
-
-      {/* 中央: 現在の範囲 (例: 2025年1月 など) */}
       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
         {label}
       </Typography>
-
-      {/* 右側: 月 / 週 / 日 切り替え */}
       <div>
         <Button onClick={goToMonth} variant="outlined" sx={{ mr: 1 }}>
           月
@@ -133,10 +83,6 @@ function CustomToolbar(props) {
   );
 }
 
-/**
- * 施設ごとのイベント色分けに使うパレットをコンポーネント外で定義
- * （毎回再定義されるのを防ぎ、useMemo依存から外す）
- */
 const COLORS = [
   '#E53E3E',
   '#DD6B20',
@@ -151,32 +97,20 @@ const COLORS = [
 ];
 
 export default function StaffShiftPage() {
-  // 施設登録用
   const [staffName, setStaffName] = useState('');
   const [staffDescription, setStaffDescription] = useState('');
   const [staffPhotoFile, setStaffPhotoFile] = useState(null);
-
-  // 施設一覧
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
-
-  // 単発シフト作成用
   const [shiftDate, setShiftDate] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
   const [shiftDetail, setShiftDetail] = useState('');
   const [shiftCapacity, setShiftCapacity] = useState(1);
-  // 追加: 仮予約オプション
   const [shiftTentative, setShiftTentative] = useState(false);
-
-  // シフト一覧
   const [shiftList, setShiftList] = useState([]);
-
-  // 右クリックメニュー用
   const [contextMenu, setContextMenu] = useState(null);
   const [contextStaff, setContextStaff] = useState(null);
-
-  // 自動分割 + 曜日指定 + 期限設定
   const [autoInterval, setAutoInterval] = useState(60);
   const [breakStartTime, setBreakStartTime] = useState(null);
   const [breakEndTime, setBreakEndTime] = useState(null);
@@ -195,88 +129,61 @@ export default function StaffShiftPage() {
   const [autoEndTime, setAutoEndTime] = useState(null);
   const [autoShiftDetail, setAutoShiftDetail] = useState('');
   const [autoShiftCapacity, setAutoShiftCapacity] = useState(1);
-  const [autoShiftTentative, setAutoShiftTentative] = useState(false); // 自動生成でも仮予約を作るか
-
-  // カレンダー表示用
+  const [autoShiftTentative, setAutoShiftTentative] = useState(false);
   const [allShifts, setAllShifts] = useState([]);
   const [allReservations, setAllReservations] = useState([]);
+  const [selectedStaffIdsForCalendar, setSelectedStaffIdsForCalendar] = useState([]);
 
-  // 複数施設をカレンダーに表示するための選択状態
-  const [selectedStaffIdsForCalendar, setSelectedStaffIdsForCalendar] =
-    useState([]);
-
-  // =====================================
-  // 施設 (Staff) の購読
-  // =====================================
   useEffect(() => {
-    const subscription = DataStore.observeQuery(Staff).subscribe(
-      async ({ items }) => {
-        const staffWithPhotoUrls = await Promise.all(
-          items.map(async (staff) => {
-            if (staff.photo) {
-              try {
-                const { url } = await getUrl({
-                  key: staff.photo,
-                  level: 'public',
-                });
-                return { ...staff, photoURL: url.href };
-              } catch (err) {
-                return { ...staff, photoURL: '' };
-              }
+    const subscription = DataStore.observeQuery(Staff).subscribe(async ({ items }) => {
+      const staffWithPhotoUrls = await Promise.all(
+        items.map(async (staff) => {
+          if (staff.photo) {
+            try {
+              const { url } = await getUrl({ key: staff.photo, level: 'public' });
+              return { ...staff, photoURL: url.href };
+            } catch (err) {
+              return { ...staff, photoURL: '' };
             }
-            return { ...staff, photoURL: '' };
-          })
-        );
-        setStaffList(staffWithPhotoUrls);
-      }
-    );
-
+          }
+          return { ...staff, photoURL: '' };
+        })
+      );
+      setStaffList(staffWithPhotoUrls);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  // =====================================
-  // 選択施設のシフト一覧購読
-  // =====================================
   useEffect(() => {
     if (!selectedStaff) {
       setShiftList([]);
       return;
     }
-
-    const subscription = DataStore.observeQuery(Shift, (s) =>
-      s.staffID.eq(selectedStaff.id)
-    ).subscribe(async ({ items }) => {
-      const shiftWithUrls = await Promise.all(
-        items.map(async (shift) => {
-          if (shift.photo) {
-            try {
-              const { url } = await getUrl({
-                key: shift.photo,
-                level: 'public',
-              });
-              return { ...shift, photoURL: url.href };
-            } catch {
-              return { ...shift, photoURL: '' };
+    const subscription = DataStore.observeQuery(Shift, (s) => s.staffID.eq(selectedStaff.id)).subscribe(
+      async ({ items }) => {
+        const shiftWithUrls = await Promise.all(
+          items.map(async (shift) => {
+            if (shift.photo) {
+              try {
+                const { url } = await getUrl({ key: shift.photo, level: 'public' });
+                return { ...shift, photoURL: url.href };
+              } catch {
+                return { ...shift, photoURL: '' };
+              }
             }
-          }
-          return { ...shift, photoURL: '' };
-        })
-      );
-      setShiftList(shiftWithUrls);
-    });
-
+            return { ...shift, photoURL: '' };
+          })
+        );
+        setShiftList(shiftWithUrls);
+      }
+    );
     return () => subscription.unsubscribe();
   }, [selectedStaff]);
 
-  // =====================================
-  // 全シフト & 全予約 の購読 (カレンダー表示用)
-  // =====================================
   useEffect(() => {
-    // シフト
     const shiftSub = DataStore.observeQuery(Shift).subscribe(({ items }) => {
       setAllShifts(items);
     });
-    // 予約
     const resSub = DataStore.observeQuery(Reservation).subscribe(({ items }) => {
       setAllReservations(items);
     });
@@ -286,23 +193,16 @@ export default function StaffShiftPage() {
     };
   }, []);
 
-  // ----------------------------------------
-  // 施設新規作成
-  // ----------------------------------------
   const createStaff = async () => {
     if (!staffName.trim()) {
       alert('予約名を入力してください');
       return;
     }
-
     let photoKey = '';
     if (staffPhotoFile) {
       try {
         const fileName = `staff-photos/${Date.now()}_${staffPhotoFile.name}`;
-        await uploadData({
-          key: fileName,
-          data: staffPhotoFile,
-        });
+        await uploadData({ key: fileName, data: staffPhotoFile });
         photoKey = fileName;
       } catch (err) {
         console.error('予約写真アップロード失敗:', err);
@@ -310,7 +210,6 @@ export default function StaffShiftPage() {
         return;
       }
     }
-
     try {
       const saved = await DataStore.save(
         new Staff({
@@ -321,7 +220,6 @@ export default function StaffShiftPage() {
         })
       );
       setSelectedStaff(saved);
-      // 入力リセット
       setStaffName('');
       setStaffDescription('');
       setStaffPhotoFile(null);
@@ -332,9 +230,6 @@ export default function StaffShiftPage() {
     }
   };
 
-  // ----------------------------------------
-  // シフト追加（単発）
-  // ----------------------------------------
   const createShift = async () => {
     if (!selectedStaff) {
       alert('施設を選択してください');
@@ -353,7 +248,6 @@ export default function StaffShiftPage() {
       .set('year', shiftDate.year())
       .set('month', shiftDate.month())
       .set('date', shiftDate.date());
-
     if (end.isBefore(start)) {
       alert('終了時刻は開始時刻より後にしてください');
       return;
@@ -369,12 +263,10 @@ export default function StaffShiftPage() {
           photo: selectedStaff.photo || '',
           details: shiftDetail,
           capacity: shiftCapacity,
-          // 仮予約フラグを反映
           tentative: shiftTentative,
         })
       );
       alert('シフトを作成しました。');
-      // リセット
       setShiftDate(null);
       setStartTime(null);
       setEndTime(null);
@@ -387,9 +279,6 @@ export default function StaffShiftPage() {
     }
   };
 
-  // ==========================================================
-  // 自動分割シフト生成
-  // ==========================================================
   const handleCreateAutoShifts = async () => {
     if (!selectedStaff) {
       alert('施設を選択してください');
@@ -411,16 +300,12 @@ export default function StaffShiftPage() {
       alert('終了日は開始日より後にしてください');
       return;
     }
-
     let current = repeatStartDate.clone();
     const tasks = [];
-
     while (current.isSameOrBefore(repeatEndDate, 'day')) {
       if (isDaySelected(current)) {
         const dateStr = current.format('YYYY-MM-DD');
         const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-
-        // 1日の中で開始～終了を interval 分ごとに分割
         const baseStart = autoStartTime
           .clone()
           .year(current.year())
@@ -431,14 +316,9 @@ export default function StaffShiftPage() {
           .year(current.year())
           .month(current.month())
           .date(current.date());
-
         let bStart = null;
         let bEnd = null;
-        if (
-          breakStartTime &&
-          breakEndTime &&
-          breakEndTime.isAfter(breakStartTime)
-        ) {
+        if (breakStartTime && breakEndTime && breakEndTime.isAfter(breakStartTime)) {
           bStart = breakStartTime
             .clone()
             .year(current.year())
@@ -478,7 +358,6 @@ export default function StaffShiftPage() {
       }
       current = current.add(1, 'day');
     }
-
     try {
       await Promise.all(tasks);
       alert('自動分割シフトを登録しました。');
@@ -488,9 +367,6 @@ export default function StaffShiftPage() {
     }
   };
 
-  /**
-   * 指定の曜日がオンかを判定
-   */
   const isDaySelected = (dateObj) => {
     switch (dateObj.day()) {
       case 0:
@@ -512,9 +388,6 @@ export default function StaffShiftPage() {
     }
   };
 
-  /**
-   * 開始～終了を interval 分ごとに分割し、休憩を除外したスロットを返す
-   */
   const getTimeSlotsExcludingBreak = (
     baseDate,
     baseStart,
@@ -525,9 +398,7 @@ export default function StaffShiftPage() {
   ) => {
     const timeSlots = [];
     const ranges = [];
-
     if (bStart && bEnd && bEnd.isAfter(bStart)) {
-      // 休憩が有効
       const firstRangeEnd = bStart.isAfter(baseStart) ? bStart : baseStart;
       const secondRangeStart = bEnd.isBefore(baseEnd) ? bEnd : baseEnd;
       if (firstRangeEnd.isAfter(baseStart)) {
@@ -537,10 +408,8 @@ export default function StaffShiftPage() {
         ranges.push([secondRangeStart, baseEnd]);
       }
     } else {
-      // 休憩無し
       ranges.push([baseStart, baseEnd]);
     }
-
     ranges.forEach(([rngStart, rngEnd]) => {
       let slotStart = rngStart.clone();
       while (slotStart.isBefore(rngEnd)) {
@@ -550,25 +419,20 @@ export default function StaffShiftPage() {
         slotStart = slotEnd;
       }
     });
-
     return timeSlots;
   };
 
-  // 右クリックメニュー
   const handleStaffContextMenu = (event, staff) => {
     event.preventDefault();
     setContextStaff(staff);
-    setContextMenu({
-      mouseX: event.clientX + 2,
-      mouseY: event.clientY - 6,
-    });
+    setContextMenu({ mouseX: event.clientX + 2, mouseY: event.clientY - 6 });
   };
+
   const handleCloseContextMenu = () => {
     setContextMenu(null);
     setContextStaff(null);
   };
 
-  // 非表示トグル
   const handleToggleHideStaff = async () => {
     if (!contextStaff) return;
     const original = await DataStore.query(Staff, contextStaff.id);
@@ -582,7 +446,6 @@ export default function StaffShiftPage() {
     handleCloseContextMenu();
   };
 
-  // 施設削除
   const handleDeleteStaff = async () => {
     if (!contextStaff) return;
     const original = await DataStore.query(Staff, contextStaff.id);
@@ -592,21 +455,14 @@ export default function StaffShiftPage() {
     handleCloseContextMenu();
   };
 
-  // 曜日チェック
   const handleToggleDay = (key) => {
     setDaysOfWeek((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // =====================================
-  // カレンダーに表示するイベント生成
-  // （予約済みかどうか、施設ごとの色分けにも使用）
-  // =====================================
   const calendarEvents = useMemo(() => {
     return allShifts.map((shift) => {
       const shiftStart = new Date(shift.startTime);
       const shiftEnd = new Date(shift.endTime);
-
-      // このシフトに紐づく予約を取得
       const shiftReservations = allReservations.filter(
         (r) =>
           r.staffID === shift.staffID &&
@@ -614,17 +470,9 @@ export default function StaffShiftPage() {
           r.startTime === shift.startTime &&
           r.endTime === shift.endTime
       );
-
-      // 予約が1件以上あれば一旦「予約済み」とみなすが、PENDING かもしれない
       const isReserved = shiftReservations.length > 0;
-
-      // イベントタイトルを "仮予約" or "シフト" + "予約済みor承認待ち" に変更する例
-      // ここでは簡易的に: shift.tentative が true -> 「仮予約」
-      // 予約がある場合は「(予約あり)」などつける
-      let title = shift.tentative ? '仮予約' : 'シフト';
-
-      // 予約がある場合に、PENDING が含まれるか確認
       const hasPending = shiftReservations.some((r) => r.status === 'PENDING');
+      let title = shift.tentative ? '仮予約' : 'シフト';
       if (isReserved) {
         if (hasPending) {
           title += ' (仮予約中)';
@@ -632,7 +480,6 @@ export default function StaffShiftPage() {
           title += ' (予約済み)';
         }
       }
-
       return {
         id: shift.id,
         staffID: shift.staffID,
@@ -646,7 +493,6 @@ export default function StaffShiftPage() {
     });
   }, [allShifts, allReservations]);
 
-  // 施設ごとの色をマッピング
   const staffColorMap = useMemo(() => {
     const map = {};
     staffList.forEach((staff, index) => {
@@ -655,43 +501,29 @@ export default function StaffShiftPage() {
     return map;
   }, [staffList]);
 
-  // カレンダーイベントのスタイル変更（施設ごとに色分け & 予約状態に応じて不透明度変更など）
   const eventPropGetter = (event) => {
     const color = staffColorMap[event.staffID] || '#999';
     return {
       style: {
         backgroundColor: color,
-        // PENDING ならやや薄く、CONFIRMED なら濃く表示する等も可能
-        opacity: event.shiftReservations.some((r) => r.status === 'PENDING')
-          ? 0.8
-          : 1.0,
+        opacity: event.shiftReservations.some((r) => r.status === 'PENDING') ? 0.8 : 1,
       },
     };
   };
 
-  // 選択された施設のみ表示させる
   const filteredCalendarEvents = useMemo(() => {
     if (selectedStaffIdsForCalendar.length === 0) {
-      // 何もチェックしない場合は表示無し
       return [];
     }
-    return calendarEvents.filter((ev) =>
-      selectedStaffIdsForCalendar.includes(ev.staffID)
-    );
+    return calendarEvents.filter((ev) => selectedStaffIdsForCalendar.includes(ev.staffID));
   }, [calendarEvents, selectedStaffIdsForCalendar]);
 
-  /**
-   * カレンダーイベントをクリックしたときの動作:
-   *   - 予約がある場合: 予約者一覧をアラート or 確認ダイアログで表示し、承認/削除などを行う
-   *   - 予約がない場合: 手動で予約を追加するかどうか（管理者が代理予約する想定）
-   */
   const handleSelectEvent = async (event) => {
     const shiftClicked = allShifts.find((s) => s.id === event.id);
     if (!shiftClicked) {
       alert('シフトが見つかりません');
       return;
     }
-    // このシフトに紐づく予約
     const shiftReservations = allReservations.filter(
       (r) =>
         r.staffID === shiftClicked.staffID &&
@@ -699,24 +531,16 @@ export default function StaffShiftPage() {
         r.startTime === shiftClicked.startTime &&
         r.endTime === shiftClicked.endTime
     );
-
     if (shiftReservations.length > 0) {
-      // 複数予約が存在する場合もあるので、全件表示する
       let message = '';
       shiftReservations.forEach((res) => {
         message += `\n予約者: ${res.clientName}\nEmail: ${res.email}\nPhone: ${res.phone}\nステータス: ${res.status}\n---------------\n`;
       });
-
-      // 確認ダイアログ: "承認" or "削除" など
       const action = window.prompt(
         `既存の予約一覧:\n${message}\n\n操作を選択してください。\n- "approve": 承認\n- "delete": 削除\n- 何も入力しない: キャンセル`
       );
-      if (!action) return; // キャンセル
-
-      // action が "approve" の場合、status が "PENDING" の予約を "CONFIRMED" にする
+      if (!action) return;
       if (action === 'approve') {
-        // 仮予約フラグ (tentative) のシフトに対して PENDING を承認
-        // すべての PENDING を承認するとしている
         for (const res of shiftReservations) {
           if (shiftClicked.tentative && res.status === 'PENDING') {
             const orig = await DataStore.query(Reservation, res.id);
@@ -732,7 +556,6 @@ export default function StaffShiftPage() {
         alert('仮予約を承認しました。');
         return;
       } else if (action === 'delete') {
-        // 予約を削除
         for (const reservation of shiftReservations) {
           const orig = await DataStore.query(Reservation, reservation.id);
           if (orig) {
@@ -742,13 +565,9 @@ export default function StaffShiftPage() {
         alert('予約を削除しました。');
         return;
       }
-      // それ以外は何もしない
     } else {
-      // 未予約の場合 -> 予約を作るかどうか
       const clientName = window.prompt('予約者名を入力 (空でキャンセル): ');
       if (!clientName) return;
-
-      // capacityチェック（status === "CONFIRMED" の数だけカウントする）
       const existReservations = shiftReservations.filter((r) => r.status === 'CONFIRMED');
       const existCount = existReservations.length;
       const cap = shiftClicked.capacity;
@@ -756,8 +575,6 @@ export default function StaffShiftPage() {
         alert('定員に達しているため予約できません。');
         return;
       }
-
-      // 予約情報を作成 (管理者からの代理予約として例示: email/phone 未設定の場合は空文字など)
       try {
         await DataStore.save(
           new Reservation({
@@ -767,7 +584,7 @@ export default function StaffShiftPage() {
             startTime: shiftClicked.startTime,
             endTime: shiftClicked.endTime,
             clientName: clientName,
-            owner: '', // 管理者代理で入れるなら空
+            owner: '',
             email: '',
             phone: '',
             status: shiftClicked.tentative ? 'PENDING' : 'CONFIRMED',
@@ -781,7 +598,6 @@ export default function StaffShiftPage() {
     }
   };
 
-  // カレンダーに表示する施設のチェックボックスのトグル
   const handleToggleStaffForCalendar = (staffId) => {
     setSelectedStaffIdsForCalendar((prev) => {
       if (prev.includes(staffId)) {
@@ -792,16 +608,11 @@ export default function StaffShiftPage() {
     });
   };
 
-  // ================================
-  // JSX
-  // ================================
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
         予約登録
       </Typography>
-
-      {/* 施設登録フォーム */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle1">予約施設登録</Typography>
         <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -836,9 +647,7 @@ export default function StaffShiftPage() {
               />
             </Button>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              {staffPhotoFile
-                ? `選択中: ${staffPhotoFile.name}`
-                : 'ファイル未選択'}
+              {staffPhotoFile ? `選択中: ${staffPhotoFile.name}` : 'ファイル未選択'}
             </Typography>
           </Grid>
         </Grid>
@@ -850,9 +659,7 @@ export default function StaffShiftPage() {
           </Grid>
         </Grid>
       </Paper>
-
       <Grid container spacing={2}>
-        {/* 施設一覧 */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1">予約一覧</Typography>
@@ -876,8 +683,6 @@ export default function StaffShiftPage() {
             </List>
           </Paper>
         </Grid>
-
-        {/* シフト登録 */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="subtitle1">単発シフト登録</Typography>
@@ -886,11 +691,7 @@ export default function StaffShiftPage() {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item>
-                      <DatePicker
-                        label="日付"
-                        value={shiftDate}
-                        onChange={(newVal) => setShiftDate(newVal)}
-                      />
+                      <DatePicker label="日付" value={shiftDate} onChange={(newVal) => setShiftDate(newVal)} />
                     </Grid>
                     <Grid item>
                       <TimePicker
@@ -910,7 +711,6 @@ export default function StaffShiftPage() {
                     </Grid>
                   </Grid>
                 </LocalizationProvider>
-
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -927,9 +727,7 @@ export default function StaffShiftPage() {
                       label="定員"
                       type="number"
                       value={shiftCapacity}
-                      onChange={(e) =>
-                        setShiftCapacity(parseInt(e.target.value, 10) || 1)
-                      }
+                      onChange={(e) => setShiftCapacity(parseInt(e.target.value, 10) || 1)}
                       fullWidth
                     />
                   </Grid>
@@ -945,7 +743,6 @@ export default function StaffShiftPage() {
                     />
                   </Grid>
                 </Grid>
-
                 <Button variant="contained" onClick={createShift} sx={{ mt: 2 }}>
                   シフト追加
                 </Button>
@@ -956,8 +753,6 @@ export default function StaffShiftPage() {
               </Typography>
             )}
           </Paper>
-
-          {/* 自動分割 + 曜日繰り返し */}
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1">自動生成シフト登録</Typography>
             {selectedStaff ? (
@@ -983,70 +778,34 @@ export default function StaffShiftPage() {
                   </Grid>
                   <FormGroup row sx={{ mt: 2, ml: 1 }}>
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.sun}
-                          onChange={() => handleToggleDay('sun')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.sun} onChange={() => handleToggleDay('sun')} />}
                       label="日"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.mon}
-                          onChange={() => handleToggleDay('mon')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.mon} onChange={() => handleToggleDay('mon')} />}
                       label="月"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.tue}
-                          onChange={() => handleToggleDay('tue')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.tue} onChange={() => handleToggleDay('tue')} />}
                       label="火"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.wed}
-                          onChange={() => handleToggleDay('wed')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.wed} onChange={() => handleToggleDay('wed')} />}
                       label="水"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.thu}
-                          onChange={() => handleToggleDay('thu')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.thu} onChange={() => handleToggleDay('thu')} />}
                       label="木"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.fri}
-                          onChange={() => handleToggleDay('fri')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.fri} onChange={() => handleToggleDay('fri')} />}
                       label="金"
                     />
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={daysOfWeek.sat}
-                          onChange={() => handleToggleDay('sat')}
-                        />
-                      }
+                      control={<Checkbox checked={daysOfWeek.sat} onChange={() => handleToggleDay('sat')} />}
                       label="土"
                     />
                   </FormGroup>
-
                   <Grid container spacing={2} sx={{ mt: 2 }}>
                     <Grid item xs={6} sm={3}>
                       <TimePicker
@@ -1082,16 +841,13 @@ export default function StaffShiftPage() {
                     </Grid>
                   </Grid>
                 </LocalizationProvider>
-
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={6} sm={3}>
                     <TextField
                       label="インターバル(分)"
                       type="number"
                       value={autoInterval}
-                      onChange={(e) =>
-                        setAutoInterval(parseInt(e.target.value, 10) || 60)
-                      }
+                      onChange={(e) => setAutoInterval(parseInt(e.target.value, 10) || 60)}
                       fullWidth
                     />
                   </Grid>
@@ -1100,9 +856,7 @@ export default function StaffShiftPage() {
                       label="定員"
                       type="number"
                       value={autoShiftCapacity}
-                      onChange={(e) =>
-                        setAutoShiftCapacity(parseInt(e.target.value, 10) || 1)
-                      }
+                      onChange={(e) => setAutoShiftCapacity(parseInt(e.target.value, 10) || 1)}
                       fullWidth
                     />
                   </Grid>
@@ -1119,23 +873,13 @@ export default function StaffShiftPage() {
                   <Grid item xs={12} sm={2} display="flex" alignItems="center">
                     <FormControlLabel
                       control={
-                        <Checkbox
-                          checked={autoShiftTentative}
-                          onChange={(e) =>
-                            setAutoShiftTentative(e.target.checked)
-                          }
-                        />
+                        <Checkbox checked={autoShiftTentative} onChange={(e) => setAutoShiftTentative(e.target.checked)} />
                       }
                       label="仮予約"
                     />
                   </Grid>
                 </Grid>
-
-                <Button
-                  variant="contained"
-                  onClick={handleCreateAutoShifts}
-                  sx={{ mt: 2 }}
-                >
+                <Button variant="contained" onClick={handleCreateAutoShifts} sx={{ mt: 2 }}>
                   自動生成
                 </Button>
               </>
@@ -1147,8 +891,6 @@ export default function StaffShiftPage() {
           </Paper>
         </Grid>
       </Grid>
-
-      {/* 選択施設のシフト一覧 */}
       {selectedStaff && (
         <Paper sx={{ p: 2, mt: 2 }}>
           <TableContainer component={Paper}>
@@ -1171,12 +913,8 @@ export default function StaffShiftPage() {
                   .map((shift) => (
                     <TableRow key={shift.id}>
                       <TableCell>{shift.date}</TableCell>
-                      <TableCell>
-                        {dayjs(shift.startTime).format('HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        {dayjs(shift.endTime).format('HH:mm')}
-                      </TableCell>
+                      <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
+                      <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
                       <TableCell>{shift.details || ''}</TableCell>
                       <TableCell>{selectedStaff?.description || ''}</TableCell>
                       <TableCell>
@@ -1191,9 +929,7 @@ export default function StaffShiftPage() {
                         )}
                       </TableCell>
                       <TableCell>{shift.capacity ?? ''}</TableCell>
-                      <TableCell>
-                        {shift.tentative ? '仮予約' : '通常'}
-                      </TableCell>
+                      <TableCell>{shift.tentative ? '仮予約' : '通常'}</TableCell>
                     </TableRow>
                   ))}
               </TableBody>
@@ -1201,25 +937,17 @@ export default function StaffShiftPage() {
           </TableContainer>
         </Paper>
       )}
-
-      {/* 右クリックメニュー */}
       <Menu
         open={contextMenu !== null}
         onClose={handleCloseContextMenu}
         anchorReference="anchorPosition"
-        anchorPosition={
-          contextMenu !== null
-            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-            : undefined
-        }
+        anchorPosition={contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
       >
         <MenuItem onClick={handleToggleHideStaff}>
           {contextStaff?.hidden ? '表示にする' : '非表示にする'}
         </MenuItem>
         <MenuItem onClick={handleDeleteStaff}>削除</MenuItem>
       </Menu>
-
-      {/* 全体カレンダー */}
       <Paper sx={{ p: 2, mt: 4 }}>
         <Typography variant="h6" gutterBottom>
           全施設・スタッフの予約状況カレンダー
@@ -1227,8 +955,6 @@ export default function StaffShiftPage() {
         <Typography variant="body2" sx={{ mb: 2 }}>
           イベントをクリックすると、予約の確認・承認・削除などが可能です。
         </Typography>
-
-        {/* 施設チェックボックスで絞り込み */}
         <Paper sx={{ p: 2, mb: 2 }}>
           <Typography variant="subtitle2">カレンダーに表示する施設</Typography>
           <FormGroup row>
@@ -1246,7 +972,6 @@ export default function StaffShiftPage() {
             ))}
           </FormGroup>
         </Paper>
-
         <div style={{ height: '700px', marginTop: '20px' }}>
           <Calendar
             localizer={localizer}
@@ -1258,9 +983,7 @@ export default function StaffShiftPage() {
             views={['month', 'week', 'day']}
             defaultView={Views.MONTH}
             onSelectEvent={handleSelectEvent}
-            components={{
-              toolbar: CustomToolbar,
-            }}
+            components={{ toolbar: CustomToolbar }}
             eventPropGetter={eventPropGetter}
           />
         </div>
