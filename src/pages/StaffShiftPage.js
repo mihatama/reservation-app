@@ -42,8 +42,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import ja from 'date-fns/locale/ja';
 
-import { fetchAuthSession } from '@aws-amplify/auth';
 dayjs.extend(isSameOrBefore);
+
 // date-fns の日本語ロケール設定
 const locales = { ja: ja };
 
@@ -133,6 +133,23 @@ function CustomToolbar(props) {
   );
 }
 
+/**
+ * 施設ごとのイベント色分けに使うパレットをコンポーネント外で定義
+ * （毎回再定義されるのを防ぎ、useMemo依存から外す）
+ */
+const COLORS = [
+  '#E53E3E',
+  '#DD6B20',
+  '#D69E2E',
+  '#38A169',
+  '#3182CE',
+  '#805AD5',
+  '#718096',
+  '#4299E1',
+  '#ED64A6',
+  '#ECC94B',
+];
+
 export default function StaffShiftPage() {
   // 施設登録用
   const [staffName, setStaffName] = useState('');
@@ -149,6 +166,8 @@ export default function StaffShiftPage() {
   const [endTime, setEndTime] = useState(null);
   const [shiftDetail, setShiftDetail] = useState('');
   const [shiftCapacity, setShiftCapacity] = useState(1);
+  // 追加: 仮予約オプション
+  const [shiftTentative, setShiftTentative] = useState(false);
 
   // シフト一覧
   const [shiftList, setShiftList] = useState([]);
@@ -176,36 +195,15 @@ export default function StaffShiftPage() {
   const [autoEndTime, setAutoEndTime] = useState(null);
   const [autoShiftDetail, setAutoShiftDetail] = useState('');
   const [autoShiftCapacity, setAutoShiftCapacity] = useState(1);
-
-  // 認証: 管理者判定
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [autoShiftTentative, setAutoShiftTentative] = useState(false); // 自動生成でも仮予約を作るか
 
   // カレンダー表示用
   const [allShifts, setAllShifts] = useState([]);
   const [allReservations, setAllReservations] = useState([]);
 
   // 複数施設をカレンダーに表示するための選択状態
-  const [selectedStaffIdsForCalendar, setSelectedStaffIdsForCalendar] = useState(
-    []
-  );
-
-  // =====================================
-  // ユーザー認証情報・管理者判定
-  // =====================================
-  useEffect(() => {
-    const getUserInfo = async () => {
-      try {
-        const session = await fetchAuthSession();
-        // groups から管理者判定
-        const groups =
-          session?.tokens?.idToken?.payload?.['cognito:groups'] || [];
-        setIsAdmin(groups.includes('admin'));
-      } catch (err) {
-        console.error('Fail to fetch session', err);
-      }
-    };
-    getUserInfo();
-  }, []);
+  const [selectedStaffIdsForCalendar, setSelectedStaffIdsForCalendar] =
+    useState([]);
 
   // =====================================
   // 施設 (Staff) の購読
@@ -371,6 +369,8 @@ export default function StaffShiftPage() {
           photo: selectedStaff.photo || '',
           details: shiftDetail,
           capacity: shiftCapacity,
+          // 仮予約フラグを反映
+          tentative: shiftTentative,
         })
       );
       alert('シフトを作成しました。');
@@ -380,6 +380,7 @@ export default function StaffShiftPage() {
       setEndTime(null);
       setShiftDetail('');
       setShiftCapacity(1);
+      setShiftTentative(false);
     } catch (err) {
       console.error('createShift error', err);
       alert('シフト登録に失敗しました。');
@@ -469,6 +470,7 @@ export default function StaffShiftPage() {
                 photo: selectedStaff.photo || '',
                 details: autoShiftDetail,
                 capacity: autoShiftCapacity,
+                tentative: autoShiftTentative,
               })
             )
           );
@@ -604,6 +606,7 @@ export default function StaffShiftPage() {
       const shiftStart = new Date(shift.startTime);
       const shiftEnd = new Date(shift.endTime);
 
+      // このシフトに紐づく予約を取得
       const shiftReservations = allReservations.filter(
         (r) =>
           r.staffID === shift.staffID &&
@@ -611,7 +614,24 @@ export default function StaffShiftPage() {
           r.startTime === shift.startTime &&
           r.endTime === shift.endTime
       );
+
+      // 予約が1件以上あれば一旦「予約済み」とみなすが、PENDING かもしれない
       const isReserved = shiftReservations.length > 0;
+
+      // イベントタイトルを "仮予約" or "シフト" + "予約済みor承認待ち" に変更する例
+      // ここでは簡易的に: shift.tentative が true -> 「仮予約」
+      // 予約がある場合は「(予約あり)」などつける
+      let title = shift.tentative ? '仮予約' : 'シフト';
+
+      // 予約がある場合に、PENDING が含まれるか確認
+      const hasPending = shiftReservations.some((r) => r.status === 'PENDING');
+      if (isReserved) {
+        if (hasPending) {
+          title += ' (仮予約中)';
+        } else {
+          title += ' (予約済み)';
+        }
+      }
 
       return {
         id: shift.id,
@@ -619,39 +639,32 @@ export default function StaffShiftPage() {
         start: shiftStart,
         end: shiftEnd,
         reserved: isReserved,
+        title,
+        shiftReservations,
+        shiftTentative: shift.tentative,
       };
     });
   }, [allShifts, allReservations]);
 
   // 施設ごとの色をマッピング
-  const colors = [
-    '#E53E3E',
-    '#DD6B20',
-    '#D69E2E',
-    '#38A169',
-    '#3182CE',
-    '#805AD5',
-    '#718096',
-    '#4299E1',
-    '#ED64A6',
-    '#ECC94B',
-  ];
-
   const staffColorMap = useMemo(() => {
     const map = {};
     staffList.forEach((staff, index) => {
-      map[staff.id] = colors[index % colors.length];
+      map[staff.id] = COLORS[index % COLORS.length];
     });
     return map;
   }, [staffList]);
 
-  // カレンダーイベントのスタイル変更（施設ごとに色分け & 予約で不透明度変更）
+  // カレンダーイベントのスタイル変更（施設ごとに色分け & 予約状態に応じて不透明度変更など）
   const eventPropGetter = (event) => {
     const color = staffColorMap[event.staffID] || '#999';
     return {
       style: {
         backgroundColor: color,
-        opacity: event.reserved ? 1.0 : 0.5,
+        // PENDING ならやや薄く、CONFIRMED なら濃く表示する等も可能
+        opacity: event.shiftReservations.some((r) => r.status === 'PENDING')
+          ? 0.8
+          : 1.0,
       },
     };
   };
@@ -659,26 +672,20 @@ export default function StaffShiftPage() {
   // 選択された施設のみ表示させる
   const filteredCalendarEvents = useMemo(() => {
     if (selectedStaffIdsForCalendar.length === 0) {
-      // 何も選択されていない場合は全表示 or 全非表示、要件次第ですが
-      // 「任意で選択でき」とあるので「選択なし=すべて表示」よりも
-      // 「選択しないと何も出ない」方が明確かと思われます。
-      // 必要に応じてどちらか切り替えてください。
+      // 何もチェックしない場合は表示無し
       return [];
-      // もしくは全表示にするなら:
-      // return calendarEvents;
     }
     return calendarEvents.filter((ev) =>
       selectedStaffIdsForCalendar.includes(ev.staffID)
     );
   }, [calendarEvents, selectedStaffIdsForCalendar]);
 
-  // カレンダーイベントをクリックしたときの動作
+  /**
+   * カレンダーイベントをクリックしたときの動作:
+   *   - 予約がある場合: 予約者一覧をアラート or 確認ダイアログで表示し、承認/削除などを行う
+   *   - 予約がない場合: 手動で予約を追加するかどうか（管理者が代理予約する想定）
+   */
   const handleSelectEvent = async (event) => {
-    if (!isAdmin) {
-      // 一般ユーザーは操作不可
-      alert('管理者権限が必要です。');
-      return;
-    }
     const shiftClicked = allShifts.find((s) => s.id === event.id);
     if (!shiftClicked) {
       alert('シフトが見つかりません');
@@ -694,35 +701,63 @@ export default function StaffShiftPage() {
     );
 
     if (shiftReservations.length > 0) {
-      // 予約削除するか確認
-      const confirmDelete = window.confirm(
-        `以下の予約を削除しますか？\n${shiftReservations
-          .map((r) => r.clientName)
-          .join(', ')}`
+      // 複数予約が存在する場合もあるので、全件表示する
+      let message = '';
+      shiftReservations.forEach((res) => {
+        message += `\n予約者: ${res.clientName}\nEmail: ${res.email}\nPhone: ${res.phone}\nステータス: ${res.status}\n---------------\n`;
+      });
+
+      // 確認ダイアログ: "承認" or "削除" など
+      const action = window.prompt(
+        `既存の予約一覧:\n${message}\n\n操作を選択してください。\n- "approve": 承認\n- "delete": 削除\n- 何も入力しない: キャンセル`
       );
-      if (!confirmDelete) return;
-      // 削除
-      for (const reservation of shiftReservations) {
-        const orig = await DataStore.query(Reservation, reservation.id);
-        if (orig) {
-          await DataStore.delete(orig);
+      if (!action) return; // キャンセル
+
+      // action が "approve" の場合、status が "PENDING" の予約を "CONFIRMED" にする
+      if (action === 'approve') {
+        // 仮予約フラグ (tentative) のシフトに対して PENDING を承認
+        // すべての PENDING を承認するとしている
+        for (const res of shiftReservations) {
+          if (shiftClicked.tentative && res.status === 'PENDING') {
+            const orig = await DataStore.query(Reservation, res.id);
+            if (orig) {
+              await DataStore.save(
+                Reservation.copyOf(orig, (updated) => {
+                  updated.status = 'CONFIRMED';
+                })
+              );
+            }
+          }
         }
+        alert('仮予約を承認しました。');
+        return;
+      } else if (action === 'delete') {
+        // 予約を削除
+        for (const reservation of shiftReservations) {
+          const orig = await DataStore.query(Reservation, reservation.id);
+          if (orig) {
+            await DataStore.delete(orig);
+          }
+        }
+        alert('予約を削除しました。');
+        return;
       }
-      alert('予約を削除しました。');
+      // それ以外は何もしない
     } else {
-      // 未予約なら新規予約を受け付け
-      const clientName = window.prompt('予約者名を入力: ');
+      // 未予約の場合 -> 予約を作るかどうか
+      const clientName = window.prompt('予約者名を入力 (空でキャンセル): ');
       if (!clientName) return;
 
-      // capacityチェック
-      const existCount = shiftReservations.length; // 0
+      // capacityチェック（status === "CONFIRMED" の数だけカウントする）
+      const existReservations = shiftReservations.filter((r) => r.status === 'CONFIRMED');
+      const existCount = existReservations.length;
       const cap = shiftClicked.capacity;
       if (cap != null && existCount >= cap) {
         alert('定員に達しているため予約できません。');
         return;
       }
 
-      // 新規予約作成
+      // 予約情報を作成 (管理者からの代理予約として例示: email/phone 未設定の場合は空文字など)
       try {
         await DataStore.save(
           new Reservation({
@@ -732,7 +767,10 @@ export default function StaffShiftPage() {
             startTime: shiftClicked.startTime,
             endTime: shiftClicked.endTime,
             clientName: clientName,
-            owner: '', // 代行予約なので空 or 管理者のsub
+            owner: '', // 管理者代理で入れるなら空
+            email: '',
+            phone: '',
+            status: shiftClicked.tentative ? 'PENDING' : 'CONFIRMED',
           })
         );
         alert(`予約を追加しました。(${clientName})`);
@@ -760,7 +798,7 @@ export default function StaffShiftPage() {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
-        予約登録（管理者専用）
+        予約登録
       </Typography>
 
       {/* 施設登録フォーム */}
@@ -798,7 +836,9 @@ export default function StaffShiftPage() {
               />
             </Button>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              {staffPhotoFile ? `選択中: ${staffPhotoFile.name}` : 'ファイル未選択'}
+              {staffPhotoFile
+                ? `選択中: ${staffPhotoFile.name}`
+                : 'ファイル未選択'}
             </Typography>
           </Grid>
         </Grid>
@@ -882,7 +922,7 @@ export default function StaffShiftPage() {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={6} sm={3}>
                     <TextField
                       label="定員"
                       type="number"
@@ -891,6 +931,17 @@ export default function StaffShiftPage() {
                         setShiftCapacity(parseInt(e.target.value, 10) || 1)
                       }
                       fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={shiftTentative}
+                          onChange={(e) => setShiftTentative(e.target.checked)}
+                        />
+                      }
+                      label="仮予約オプション"
                     />
                   </Grid>
                 </Grid>
@@ -1055,7 +1106,7 @@ export default function StaffShiftPage() {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <TextField
                       label="シフトの詳細"
                       multiline
@@ -1063,6 +1114,19 @@ export default function StaffShiftPage() {
                       value={autoShiftDetail}
                       onChange={(e) => setAutoShiftDetail(e.target.value)}
                       fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={2} display="flex" alignItems="center">
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={autoShiftTentative}
+                          onChange={(e) =>
+                            setAutoShiftTentative(e.target.checked)
+                          }
+                        />
+                      }
+                      label="仮予約"
                     />
                   </Grid>
                 </Grid>
@@ -1084,10 +1148,9 @@ export default function StaffShiftPage() {
         </Grid>
       </Grid>
 
-      {/* 選択施設のシフト一覧 (「さんのシフト一覧」は削除) */}
+      {/* 選択施設のシフト一覧 */}
       {selectedStaff && (
         <Paper sx={{ p: 2, mt: 2 }}>
-          {/* 余計なテキストは削除済み */}
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -1099,6 +1162,7 @@ export default function StaffShiftPage() {
                   <TableCell>施設詳細</TableCell>
                   <TableCell>写真</TableCell>
                   <TableCell>定員</TableCell>
+                  <TableCell>仮予約</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1127,6 +1191,9 @@ export default function StaffShiftPage() {
                         )}
                       </TableCell>
                       <TableCell>{shift.capacity ?? ''}</TableCell>
+                      <TableCell>
+                        {shift.tentative ? '仮予約' : '通常'}
+                      </TableCell>
                     </TableRow>
                   ))}
               </TableBody>
@@ -1158,7 +1225,7 @@ export default function StaffShiftPage() {
           全施設・スタッフの予約状況カレンダー
         </Typography>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          イベントをクリックすると、管理者のみ予約の削除や新規予約が可能です。
+          イベントをクリックすると、予約の確認・承認・削除などが可能です。
         </Typography>
 
         {/* 施設チェックボックスで絞り込み */}

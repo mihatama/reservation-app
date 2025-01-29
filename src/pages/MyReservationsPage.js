@@ -1,4 +1,3 @@
-// MyReservationsPage.js
 import React, { useEffect, useState } from 'react';
 import { DataStore } from '@aws-amplify/datastore';
 import { Reservation, Staff } from '../models';
@@ -123,6 +122,8 @@ export default function MyReservationsPage() {
                   <TableCell>終了</TableCell>
                   <TableCell>施設名</TableCell>
                   <TableCell>予約者</TableCell>
+                  {/* 追加: 予約状況列 */}
+                  <TableCell>予約状況</TableCell>
                   <TableCell>キャンセル</TableCell>
                 </TableRow>
               </TableHead>
@@ -133,6 +134,16 @@ export default function MyReservationsPage() {
                     // 48時間以上前ならキャンセルOK、未満なら電話連絡
                     const start = dayjs(res.startTime);
                     const canCancel = start.diff(dayjs(), 'hour') >= 48;
+
+                    let statusLabel = '';
+                    if (res.status === 'PENDING') {
+                      statusLabel = '仮予約中';
+                    } else if (res.status === 'DENIED') {
+                      statusLabel = '否認';
+                    } else {
+                      // それ以外は 'CONFIRMED' を想定 → 予約済み
+                      statusLabel = '予約済み';
+                    }
 
                     return (
                       <TableRow key={res.id}>
@@ -145,6 +156,8 @@ export default function MyReservationsPage() {
                         <TableCell>
                           {res.clientName ? res.clientName : userFullName}
                         </TableCell>
+                        {/* 予約状況表示 */}
+                        <TableCell>{statusLabel}</TableCell>
                         <TableCell>
                           {canCancel ? (
                             <Button
