@@ -83,12 +83,20 @@ function App() {
   const checkCurrentUser = async () => {
     try {
       const session = await fetchAuthSession();
-      const payload = session.tokens.idToken.payload;
-      const groups = payload['cognito:groups'] || [];
-      const currentUsername = payload.email || '';
-      setUserGroups(groups);
-      setUsername(currentUsername);
-      setIsAuthenticated(true);
+      // 変更点：認証状態をチェックし、最新の API では session.idToken を利用する
+      if (session.isSignedIn && session.idToken) {
+        const payload = session.idToken.payload;
+        const groups = payload['cognito:groups'] || [];
+        const currentUsername = payload.email || '';
+        setUserGroups(groups);
+        setUsername(currentUsername);
+        setIsAuthenticated(true);
+      } else {
+        // 未認証の場合は状態をクリア
+        setIsAuthenticated(false);
+        setUserGroups([]);
+        setUsername('');
+      }
     } catch (error) {
       console.error('checkCurrentUser error:', error);
       setIsAuthenticated(false);
