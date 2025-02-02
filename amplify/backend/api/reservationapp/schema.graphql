@@ -34,6 +34,7 @@ type Shift
   photo: String
   details: String
   capacity: Int
+  tentative: Boolean
 }
 
 type Reservation
@@ -48,5 +49,56 @@ type Reservation
   startTime: AWSDateTime!
   endTime: AWSDateTime!
   clientName: String
+  email: String
+  phone: String
   owner: String
+  status: String
+}
+
+type Questionnaire
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
+  id: ID!
+  reservationID: ID!
+  placeOfVisit: String!
+  mamaLastName: String!
+  mamaFirstName: String!
+  mamaFuriganaLastName: String
+  mamaFuriganaFirstName: String
+  mamaBirthYear: String!
+  mamaBirthMonth: String!
+  mamaBirthDay: String!
+  childLastName: String
+  childFirstName: String
+  childFuriganaLastName: String
+  childFuriganaFirstName: String
+  childBirthYear: String
+  childBirthMonth: String
+  childBirthDay: String
+  childOrder: String
+  childSex: String
+  occupation: String
+  postpartumStatus: String
+  homePostalCode: String!
+  homeAddress: String!
+  rikaeriPostalCode: String
+  rikaeriAddress: String
+  deliveryMethod: String!
+  deliveryWeek: String!
+  birthWeight: String!
+  dischargeWeight: String!
+  dischargeDate: String
+  measurement1Date: String
+  measurement1: String
+  measurement2Date: String
+  measurement2: String
+  pregnancyCondition: String!
+  pastMedicalHistory: String!
+  medication: String!
+  infectionHistory: String!
+  familyHistory: String
+  visitReason: String!
+  additionalNotes: String
 }

@@ -16,8 +16,9 @@ export default function ShiftListPage() {
         items.map(async (staff) => {
           if (!staff.photo) return { ...staff, photoURL: placeholder };
           try {
-            const { url } = await getUrl({ key: staff.photo, level: 'public' });
-            return { ...staff, photoURL: url.href };
+            const result = await getUrl({ key: staff.photo, level: 'public' });
+            const photoURL = typeof result === 'string' ? result : result.url || placeholder;
+            return { ...staff, photoURL };
           } catch {
             return { ...staff, photoURL: placeholder };
           }
@@ -32,16 +33,12 @@ export default function ShiftListPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        スタッフ一覧
-      </Typography>
+      <Typography variant="h5" gutterBottom>スタッフ一覧</Typography>
       <Typography variant="body1" sx={{ mb: 2 }}>
         スタッフをクリックすると、そのスタッフのカレンダーへ移動します。
       </Typography>
       {!staffList.length ? (
-        <Typography variant="body2" color="textSecondary">
-          登録されたスタッフがいません。
-        </Typography>
+        <Typography variant="body2" color="textSecondary">登録されたスタッフがいません。</Typography>
       ) : (
         staffList.map((staff) => (
           <Paper

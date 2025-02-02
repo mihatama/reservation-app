@@ -109,6 +109,7 @@ export const onCreateShift = /* GraphQL */ `
       photo
       details
       capacity
+      tentative
       createdAt
       updatedAt
       _version
@@ -130,6 +131,7 @@ export const onUpdateShift = /* GraphQL */ `
       photo
       details
       capacity
+      tentative
       createdAt
       updatedAt
       _version
@@ -151,6 +153,7 @@ export const onDeleteShift = /* GraphQL */ `
       photo
       details
       capacity
+      tentative
       createdAt
       updatedAt
       _version
@@ -172,7 +175,10 @@ export const onCreateReservation = /* GraphQL */ `
       startTime
       endTime
       clientName
+      email
+      phone
       owner
+      status
       createdAt
       updatedAt
       _version
@@ -194,7 +200,10 @@ export const onUpdateReservation = /* GraphQL */ `
       startTime
       endTime
       clientName
+      email
+      phone
       owner
+      status
       createdAt
       updatedAt
       _version
@@ -216,7 +225,175 @@ export const onDeleteReservation = /* GraphQL */ `
       startTime
       endTime
       clientName
+      email
+      phone
       owner
+      status
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const onCreateQuestionnaire = /* GraphQL */ `
+  subscription OnCreateQuestionnaire(
+    $filter: ModelSubscriptionQuestionnaireFilterInput
+  ) {
+    onCreateQuestionnaire(filter: $filter) {
+      id
+      reservationID
+      placeOfVisit
+      mamaLastName
+      mamaFirstName
+      mamaFuriganaLastName
+      mamaFuriganaFirstName
+      mamaBirthYear
+      mamaBirthMonth
+      mamaBirthDay
+      childLastName
+      childFirstName
+      childFuriganaLastName
+      childFuriganaFirstName
+      childBirthYear
+      childBirthMonth
+      childBirthDay
+      childOrder
+      childSex
+      occupation
+      postpartumStatus
+      homePostalCode
+      homeAddress
+      rikaeriPostalCode
+      rikaeriAddress
+      deliveryMethod
+      deliveryWeek
+      birthWeight
+      dischargeWeight
+      dischargeDate
+      measurement1Date
+      measurement1
+      measurement2Date
+      measurement2
+      pregnancyCondition
+      pastMedicalHistory
+      medication
+      infectionHistory
+      familyHistory
+      visitReason
+      additionalNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateQuestionnaire = /* GraphQL */ `
+  subscription OnUpdateQuestionnaire(
+    $filter: ModelSubscriptionQuestionnaireFilterInput
+  ) {
+    onUpdateQuestionnaire(filter: $filter) {
+      id
+      reservationID
+      placeOfVisit
+      mamaLastName
+      mamaFirstName
+      mamaFuriganaLastName
+      mamaFuriganaFirstName
+      mamaBirthYear
+      mamaBirthMonth
+      mamaBirthDay
+      childLastName
+      childFirstName
+      childFuriganaLastName
+      childFuriganaFirstName
+      childBirthYear
+      childBirthMonth
+      childBirthDay
+      childOrder
+      childSex
+      occupation
+      postpartumStatus
+      homePostalCode
+      homeAddress
+      rikaeriPostalCode
+      rikaeriAddress
+      deliveryMethod
+      deliveryWeek
+      birthWeight
+      dischargeWeight
+      dischargeDate
+      measurement1Date
+      measurement1
+      measurement2Date
+      measurement2
+      pregnancyCondition
+      pastMedicalHistory
+      medication
+      infectionHistory
+      familyHistory
+      visitReason
+      additionalNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteQuestionnaire = /* GraphQL */ `
+  subscription OnDeleteQuestionnaire(
+    $filter: ModelSubscriptionQuestionnaireFilterInput
+  ) {
+    onDeleteQuestionnaire(filter: $filter) {
+      id
+      reservationID
+      placeOfVisit
+      mamaLastName
+      mamaFirstName
+      mamaFuriganaLastName
+      mamaFuriganaFirstName
+      mamaBirthYear
+      mamaBirthMonth
+      mamaBirthDay
+      childLastName
+      childFirstName
+      childFuriganaLastName
+      childFuriganaFirstName
+      childBirthYear
+      childBirthMonth
+      childBirthDay
+      childOrder
+      childSex
+      occupation
+      postpartumStatus
+      homePostalCode
+      homeAddress
+      rikaeriPostalCode
+      rikaeriAddress
+      deliveryMethod
+      deliveryWeek
+      birthWeight
+      dischargeWeight
+      dischargeDate
+      measurement1Date
+      measurement1
+      measurement2Date
+      measurement2
+      pregnancyCondition
+      pastMedicalHistory
+      medication
+      infectionHistory
+      familyHistory
+      visitReason
+      additionalNotes
       createdAt
       updatedAt
       _version

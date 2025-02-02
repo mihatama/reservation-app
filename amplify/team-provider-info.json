@@ -9,17 +9,25 @@
       "UnauthRoleName": "amplify-reservationapp-dev-ddcac-unauthRole",
       "StackName": "amplify-reservationapp-dev-ddcac",
       "StackId": "arn:aws:cloudformation:ap-northeast-1:560111363951:stack/amplify-reservationapp-dev-ddcac/2281f530-dc63-11ef-962a-06a914177a49",
-      "AmplifyAppId": "d3nstimeii42lv"
+      "AmplifyAppId": "d3nstimeii42lv",
+      "APIGatewayAuthURL": "https://s3.amazonaws.com/amplify-reservationapp-dev-ddcac-deployment/amplify-cfn-templates/api/APIGatewayAuthStack.json"
     },
     "categories": {
       "api": {
-        "reservationapp": {}
+        "reservationapp": {},
+        "ReservationEmailAPI": {}
       },
       "storage": {
         "s362b9d497": {}
       },
       "auth": {
         "reservationappede5f9f5": {}
+      },
+      "function": {
+        "sendReservationConfirmation": {
+          "deploymentBucketName": "amplify-reservationapp-dev-ddcac-deployment",
+          "s3Key": "amplify-builds/sendReservationConfirmation-54515378784b4e695068-build.zip"
+        }
       }
     }
   }

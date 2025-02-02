@@ -29,7 +29,10 @@ export default function ReservationUpdateForm(props) {
     startTime: "",
     endTime: "",
     clientName: "",
+    email: "",
+    phone: "",
     owner: "",
+    status: "",
   };
   const [staffID, setStaffID] = React.useState(initialValues.staffID);
   const [staffID_date, setStaffID_date] = React.useState(
@@ -39,7 +42,10 @@ export default function ReservationUpdateForm(props) {
   const [startTime, setStartTime] = React.useState(initialValues.startTime);
   const [endTime, setEndTime] = React.useState(initialValues.endTime);
   const [clientName, setClientName] = React.useState(initialValues.clientName);
+  const [email, setEmail] = React.useState(initialValues.email);
+  const [phone, setPhone] = React.useState(initialValues.phone);
   const [owner, setOwner] = React.useState(initialValues.owner);
+  const [status, setStatus] = React.useState(initialValues.status);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     const cleanValues = reservationRecord
@@ -51,7 +57,10 @@ export default function ReservationUpdateForm(props) {
     setStartTime(cleanValues.startTime);
     setEndTime(cleanValues.endTime);
     setClientName(cleanValues.clientName);
+    setEmail(cleanValues.email);
+    setPhone(cleanValues.phone);
     setOwner(cleanValues.owner);
+    setStatus(cleanValues.status);
     setErrors({});
   };
   const [reservationRecord, setReservationRecord] =
@@ -73,7 +82,10 @@ export default function ReservationUpdateForm(props) {
     startTime: [{ type: "Required" }],
     endTime: [{ type: "Required" }],
     clientName: [],
+    email: [],
+    phone: [],
     owner: [],
+    status: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -124,7 +136,10 @@ export default function ReservationUpdateForm(props) {
           startTime,
           endTime,
           clientName,
+          email,
+          phone,
           owner,
+          status,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -186,7 +201,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime,
               clientName,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.staffID ?? value;
@@ -216,7 +234,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime,
               clientName,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.staffID_date ?? value;
@@ -246,7 +267,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime,
               clientName,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.date ?? value;
@@ -278,7 +302,10 @@ export default function ReservationUpdateForm(props) {
               startTime: value,
               endTime,
               clientName,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.startTime ?? value;
@@ -310,7 +337,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime: value,
               clientName,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.endTime ?? value;
@@ -340,7 +370,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime,
               clientName: value,
+              email,
+              phone,
               owner,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.clientName ?? value;
@@ -354,6 +387,72 @@ export default function ReservationUpdateForm(props) {
         errorMessage={errors.clientName?.errorMessage}
         hasError={errors.clientName?.hasError}
         {...getOverrideProps(overrides, "clientName")}
+      ></TextField>
+      <TextField
+        label="Email"
+        isRequired={false}
+        isReadOnly={false}
+        value={email}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              staffID,
+              staffID_date,
+              date,
+              startTime,
+              endTime,
+              clientName,
+              email: value,
+              phone,
+              owner,
+              status,
+            };
+            const result = onChange(modelFields);
+            value = result?.email ?? value;
+          }
+          if (errors.email?.hasError) {
+            runValidationTasks("email", value);
+          }
+          setEmail(value);
+        }}
+        onBlur={() => runValidationTasks("email", email)}
+        errorMessage={errors.email?.errorMessage}
+        hasError={errors.email?.hasError}
+        {...getOverrideProps(overrides, "email")}
+      ></TextField>
+      <TextField
+        label="Phone"
+        isRequired={false}
+        isReadOnly={false}
+        value={phone}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              staffID,
+              staffID_date,
+              date,
+              startTime,
+              endTime,
+              clientName,
+              email,
+              phone: value,
+              owner,
+              status,
+            };
+            const result = onChange(modelFields);
+            value = result?.phone ?? value;
+          }
+          if (errors.phone?.hasError) {
+            runValidationTasks("phone", value);
+          }
+          setPhone(value);
+        }}
+        onBlur={() => runValidationTasks("phone", phone)}
+        errorMessage={errors.phone?.errorMessage}
+        hasError={errors.phone?.hasError}
+        {...getOverrideProps(overrides, "phone")}
       ></TextField>
       <TextField
         label="Owner"
@@ -370,7 +469,10 @@ export default function ReservationUpdateForm(props) {
               startTime,
               endTime,
               clientName,
+              email,
+              phone,
               owner: value,
+              status,
             };
             const result = onChange(modelFields);
             value = result?.owner ?? value;
@@ -384,6 +486,39 @@ export default function ReservationUpdateForm(props) {
         errorMessage={errors.owner?.errorMessage}
         hasError={errors.owner?.hasError}
         {...getOverrideProps(overrides, "owner")}
+      ></TextField>
+      <TextField
+        label="Status"
+        isRequired={false}
+        isReadOnly={false}
+        value={status}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              staffID,
+              staffID_date,
+              date,
+              startTime,
+              endTime,
+              clientName,
+              email,
+              phone,
+              owner,
+              status: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.status ?? value;
+          }
+          if (errors.status?.hasError) {
+            runValidationTasks("status", value);
+          }
+          setStatus(value);
+        }}
+        onBlur={() => runValidationTasks("status", status)}
+        errorMessage={errors.status?.errorMessage}
+        hasError={errors.status?.hasError}
+        {...getOverrideProps(overrides, "status")}
       ></TextField>
       <Flex
         justifyContent="space-between"

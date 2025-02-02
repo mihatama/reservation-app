@@ -7,6 +7,13 @@ const awsmobile = {
     "aws_appsync_region": "ap-northeast-1",
     "aws_appsync_authenticationType": "API_KEY",
     "aws_appsync_apiKey": "da2-bi4kac23bnam7jsrboc6tvmf2q",
+    "aws_cloud_logic_custom": [
+        {
+            "name": "ReservationEmailAPI",
+            "endpoint": "https://o6zm3tdzxf.execute-api.ap-northeast-1.amazonaws.com/dev",
+            "region": "ap-northeast-1"
+        }
+    ],
     "aws_cognito_identity_pool_id": "ap-northeast-1:c277e8aa-e958-482b-b68b-f87643bb60ab",
     "aws_cognito_region": "ap-northeast-1",
     "aws_user_pools_id": "ap-northeast-1_ifaAh40hH",

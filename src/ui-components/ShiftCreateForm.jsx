@@ -6,7 +6,13 @@
 
 /* eslint-disable */
 import * as React from "react";
-import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
+import {
+  Button,
+  Flex,
+  Grid,
+  SwitchField,
+  TextField,
+} from "@aws-amplify/ui-react";
 import { Shift } from "../models";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
 import { DataStore } from "aws-amplify/datastore";
@@ -30,6 +36,7 @@ export default function ShiftCreateForm(props) {
     photo: "",
     details: "",
     capacity: "",
+    tentative: false,
   };
   const [staffID, setStaffID] = React.useState(initialValues.staffID);
   const [staffID_date, setStaffID_date] = React.useState(
@@ -41,6 +48,7 @@ export default function ShiftCreateForm(props) {
   const [photo, setPhoto] = React.useState(initialValues.photo);
   const [details, setDetails] = React.useState(initialValues.details);
   const [capacity, setCapacity] = React.useState(initialValues.capacity);
+  const [tentative, setTentative] = React.useState(initialValues.tentative);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     setStaffID(initialValues.staffID);
@@ -51,6 +59,7 @@ export default function ShiftCreateForm(props) {
     setPhoto(initialValues.photo);
     setDetails(initialValues.details);
     setCapacity(initialValues.capacity);
+    setTentative(initialValues.tentative);
     setErrors({});
   };
   const validations = {
@@ -62,6 +71,7 @@ export default function ShiftCreateForm(props) {
     photo: [],
     details: [],
     capacity: [],
+    tentative: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -97,6 +107,7 @@ export default function ShiftCreateForm(props) {
           photo,
           details,
           capacity,
+          tentative,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -159,6 +170,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.staffID ?? value;
@@ -190,6 +202,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.staffID_date ?? value;
@@ -221,6 +234,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.date ?? value;
@@ -252,6 +266,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.startTime ?? value;
@@ -283,6 +298,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.endTime ?? value;
@@ -314,6 +330,7 @@ export default function ShiftCreateForm(props) {
               photo: value,
               details,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.photo ?? value;
@@ -345,6 +362,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details: value,
               capacity,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.details ?? value;
@@ -380,6 +398,7 @@ export default function ShiftCreateForm(props) {
               photo,
               details,
               capacity: value,
+              tentative,
             };
             const result = onChange(modelFields);
             value = result?.capacity ?? value;
@@ -394,6 +413,38 @@ export default function ShiftCreateForm(props) {
         hasError={errors.capacity?.hasError}
         {...getOverrideProps(overrides, "capacity")}
       ></TextField>
+      <SwitchField
+        label="Tentative"
+        defaultChecked={false}
+        isDisabled={false}
+        isChecked={tentative}
+        onChange={(e) => {
+          let value = e.target.checked;
+          if (onChange) {
+            const modelFields = {
+              staffID,
+              staffID_date,
+              date,
+              startTime,
+              endTime,
+              photo,
+              details,
+              capacity,
+              tentative: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.tentative ?? value;
+          }
+          if (errors.tentative?.hasError) {
+            runValidationTasks("tentative", value);
+          }
+          setTentative(value);
+        }}
+        onBlur={() => runValidationTasks("tentative", tentative)}
+        errorMessage={errors.tentative?.errorMessage}
+        hasError={errors.tentative?.hasError}
+        {...getOverrideProps(overrides, "tentative")}
+      ></SwitchField>
       <Flex
         justifyContent="space-between"
         {...getOverrideProps(overrides, "CTAFlex")}

@@ -84,6 +84,7 @@ type EagerShift = {
   readonly photo?: string | null;
   readonly details?: string | null;
   readonly capacity?: number | null;
+  readonly tentative?: boolean | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -102,6 +103,7 @@ type LazyShift = {
   readonly photo?: string | null;
   readonly details?: string | null;
   readonly capacity?: number | null;
+  readonly tentative?: boolean | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -124,7 +126,10 @@ type EagerReservation = {
   readonly startTime: string;
   readonly endTime: string;
   readonly clientName?: string | null;
+  readonly email?: string | null;
+  readonly phone?: string | null;
   readonly owner?: string | null;
+  readonly status?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -141,7 +146,10 @@ type LazyReservation = {
   readonly startTime: string;
   readonly endTime: string;
   readonly clientName?: string | null;
+  readonly email?: string | null;
+  readonly phone?: string | null;
   readonly owner?: string | null;
+  readonly status?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 }
@@ -150,4 +158,110 @@ export declare type Reservation = LazyLoading extends LazyLoadingDisabled ? Eage
 
 export declare const Reservation: (new (init: ModelInit<Reservation>) => Reservation) & {
   copyOf(source: Reservation, mutator: (draft: MutableModel<Reservation>) => MutableModel<Reservation> | void): Reservation;
+}
+
+type EagerQuestionnaire = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Questionnaire, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly reservationID: string;
+  readonly placeOfVisit: string;
+  readonly mamaLastName: string;
+  readonly mamaFirstName: string;
+  readonly mamaFuriganaLastName?: string | null;
+  readonly mamaFuriganaFirstName?: string | null;
+  readonly mamaBirthYear: string;
+  readonly mamaBirthMonth: string;
+  readonly mamaBirthDay: string;
+  readonly childLastName?: string | null;
+  readonly childFirstName?: string | null;
+  readonly childFuriganaLastName?: string | null;
+  readonly childFuriganaFirstName?: string | null;
+  readonly childBirthYear?: string | null;
+  readonly childBirthMonth?: string | null;
+  readonly childBirthDay?: string | null;
+  readonly childOrder?: string | null;
+  readonly childSex?: string | null;
+  readonly occupation?: string | null;
+  readonly postpartumStatus?: string | null;
+  readonly homePostalCode: string;
+  readonly homeAddress: string;
+  readonly rikaeriPostalCode?: string | null;
+  readonly rikaeriAddress?: string | null;
+  readonly deliveryMethod: string;
+  readonly deliveryWeek: string;
+  readonly birthWeight: string;
+  readonly dischargeWeight: string;
+  readonly dischargeDate?: string | null;
+  readonly measurement1Date?: string | null;
+  readonly measurement1?: string | null;
+  readonly measurement2Date?: string | null;
+  readonly measurement2?: string | null;
+  readonly pregnancyCondition: string;
+  readonly pastMedicalHistory: string;
+  readonly medication: string;
+  readonly infectionHistory: string;
+  readonly familyHistory?: string | null;
+  readonly visitReason: string;
+  readonly additionalNotes?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+type LazyQuestionnaire = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<Questionnaire, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly reservationID: string;
+  readonly placeOfVisit: string;
+  readonly mamaLastName: string;
+  readonly mamaFirstName: string;
+  readonly mamaFuriganaLastName?: string | null;
+  readonly mamaFuriganaFirstName?: string | null;
+  readonly mamaBirthYear: string;
+  readonly mamaBirthMonth: string;
+  readonly mamaBirthDay: string;
+  readonly childLastName?: string | null;
+  readonly childFirstName?: string | null;
+  readonly childFuriganaLastName?: string | null;
+  readonly childFuriganaFirstName?: string | null;
+  readonly childBirthYear?: string | null;
+  readonly childBirthMonth?: string | null;
+  readonly childBirthDay?: string | null;
+  readonly childOrder?: string | null;
+  readonly childSex?: string | null;
+  readonly occupation?: string | null;
+  readonly postpartumStatus?: string | null;
+  readonly homePostalCode: string;
+  readonly homeAddress: string;
+  readonly rikaeriPostalCode?: string | null;
+  readonly rikaeriAddress?: string | null;
+  readonly deliveryMethod: string;
+  readonly deliveryWeek: string;
+  readonly birthWeight: string;
+  readonly dischargeWeight: string;
+  readonly dischargeDate?: string | null;
+  readonly measurement1Date?: string | null;
+  readonly measurement1?: string | null;
+  readonly measurement2Date?: string | null;
+  readonly measurement2?: string | null;
+  readonly pregnancyCondition: string;
+  readonly pastMedicalHistory: string;
+  readonly medication: string;
+  readonly infectionHistory: string;
+  readonly familyHistory?: string | null;
+  readonly visitReason: string;
+  readonly additionalNotes?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+export declare type Questionnaire = LazyLoading extends LazyLoadingDisabled ? EagerQuestionnaire : LazyQuestionnaire
+
+export declare const Questionnaire: (new (init: ModelInit<Questionnaire>) => Questionnaire) & {
+  copyOf(source: Questionnaire, mutator: (draft: MutableModel<Questionnaire>) => MutableModel<Questionnaire> | void): Questionnaire;
 }

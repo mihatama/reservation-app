@@ -55,29 +55,15 @@ function CustomToolbar(props) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
       <div>
-        <Button onClick={goToPrev} variant="outlined" sx={{ mr: 1 }}>
-          ◀
-        </Button>
-        <Button onClick={goToToday} variant="contained" color="primary" sx={{ mr: 1 }}>
-          今日
-        </Button>
-        <Button onClick={goToNext} variant="outlined">
-          ▶
-        </Button>
+        <Button onClick={goToPrev} variant="outlined" sx={{ mr: 1 }}>◀</Button>
+        <Button onClick={goToToday} variant="contained" color="primary" sx={{ mr: 1 }}>今日</Button>
+        <Button onClick={goToNext} variant="outlined">▶</Button>
       </div>
-      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-        {label}
-      </Typography>
+      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{label}</Typography>
       <div>
-        <Button onClick={goToMonth} variant="outlined" sx={{ mr: 1 }}>
-          月
-        </Button>
-        <Button onClick={goToWeek} variant="outlined" sx={{ mr: 1 }}>
-          週
-        </Button>
-        <Button onClick={goToDay} variant="outlined">
-          日
-        </Button>
+        <Button onClick={goToMonth} variant="outlined" sx={{ mr: 1 }}>月</Button>
+        <Button onClick={goToWeek} variant="outlined" sx={{ mr: 1 }}>週</Button>
+        <Button onClick={goToDay} variant="outlined">日</Button>
       </div>
     </div>
   );
@@ -140,8 +126,9 @@ export default function StaffShiftPage() {
         items.map(async (staff) => {
           if (staff.photo) {
             try {
-              const { url } = await getUrl({ key: staff.photo, level: 'public' });
-              return { ...staff, photoURL: url.href };
+              const result = await getUrl({ key: staff.photo, level: 'public' });
+              const photoURL = typeof result === 'string' ? result : result.url || '';
+              return { ...staff, photoURL };
             } catch (err) {
               return { ...staff, photoURL: '' };
             }
@@ -165,8 +152,9 @@ export default function StaffShiftPage() {
           items.map(async (shift) => {
             if (shift.photo) {
               try {
-                const { url } = await getUrl({ key: shift.photo, level: 'public' });
-                return { ...shift, photoURL: url.href };
+                const result = await getUrl({ key: shift.photo, level: 'public' });
+                const photoURL = typeof result === 'string' ? result : result.url || '';
+                return { ...shift, photoURL };
               } catch {
                 return { ...shift, photoURL: '' };
               }
@@ -240,14 +228,8 @@ export default function StaffShiftPage() {
       return;
     }
     const dateStr = shiftDate.format('YYYY-MM-DD');
-    const start = startTime
-      .set('year', shiftDate.year())
-      .set('month', shiftDate.month())
-      .set('date', shiftDate.date());
-    const end = endTime
-      .set('year', shiftDate.year())
-      .set('month', shiftDate.month())
-      .set('date', shiftDate.date());
+    const start = startTime.set('year', shiftDate.year()).set('month', shiftDate.month()).set('date', shiftDate.date());
+    const end = endTime.set('year', shiftDate.year()).set('month', shiftDate.month()).set('date', shiftDate.date());
     if (end.isBefore(start)) {
       alert('終了時刻は開始時刻より後にしてください');
       return;
@@ -306,38 +288,15 @@ export default function StaffShiftPage() {
       if (isDaySelected(current)) {
         const dateStr = current.format('YYYY-MM-DD');
         const staffID_dateValue = `${selectedStaff.id}_${dateStr}`;
-        const baseStart = autoStartTime
-          .clone()
-          .year(current.year())
-          .month(current.month())
-          .date(current.date());
-        const baseEnd = autoEndTime
-          .clone()
-          .year(current.year())
-          .month(current.month())
-          .date(current.date());
+        const baseStart = autoStartTime.clone().year(current.year()).month(current.month()).date(current.date());
+        const baseEnd = autoEndTime.clone().year(current.year()).month(current.month()).date(current.date());
         let bStart = null;
         let bEnd = null;
         if (breakStartTime && breakEndTime && breakEndTime.isAfter(breakStartTime)) {
-          bStart = breakStartTime
-            .clone()
-            .year(current.year())
-            .month(current.month())
-            .date(current.date());
-          bEnd = breakEndTime
-            .clone()
-            .year(current.year())
-            .month(current.month())
-            .date(current.date());
+          bStart = breakStartTime.clone().year(current.year()).month(current.month()).date(current.date());
+          bEnd = breakEndTime.clone().year(current.year()).month(current.month()).date(current.date());
         }
-        const slots = getTimeSlotsExcludingBreak(
-          current,
-          baseStart,
-          baseEnd,
-          autoInterval,
-          bStart,
-          bEnd
-        );
+        const slots = getTimeSlotsExcludingBreak(current, baseStart, baseEnd, autoInterval, bStart, bEnd);
         for (const [slotStart, slotEnd] of slots) {
           tasks.push(
             DataStore.save(
@@ -369,33 +328,18 @@ export default function StaffShiftPage() {
 
   const isDaySelected = (dateObj) => {
     switch (dateObj.day()) {
-      case 0:
-        return daysOfWeek.sun;
-      case 1:
-        return daysOfWeek.mon;
-      case 2:
-        return daysOfWeek.tue;
-      case 3:
-        return daysOfWeek.wed;
-      case 4:
-        return daysOfWeek.thu;
-      case 5:
-        return daysOfWeek.fri;
-      case 6:
-        return daysOfWeek.sat;
-      default:
-        return false;
+      case 0: return daysOfWeek.sun;
+      case 1: return daysOfWeek.mon;
+      case 2: return daysOfWeek.tue;
+      case 3: return daysOfWeek.wed;
+      case 4: return daysOfWeek.thu;
+      case 5: return daysOfWeek.fri;
+      case 6: return daysOfWeek.sat;
+      default: return false;
     }
   };
 
-  const getTimeSlotsExcludingBreak = (
-    baseDate,
-    baseStart,
-    baseEnd,
-    interval,
-    bStart,
-    bEnd
-  ) => {
+  const getTimeSlotsExcludingBreak = (baseDate, baseStart, baseEnd, interval, bStart, bEnd) => {
     const timeSlots = [];
     const ranges = [];
     if (bStart && bEnd && bEnd.isAfter(bStart)) {
@@ -610,27 +554,15 @@ export default function StaffShiftPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        予約登録
-      </Typography>
+      <Typography variant="h5" gutterBottom>予約登録</Typography>
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="subtitle1">予約施設登録</Typography>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              label="予約名"
-              value={staffName}
-              onChange={(e) => setStaffName(e.target.value)}
-              fullWidth
-            />
+            <TextField label="予約名" value={staffName} onChange={(e) => setStaffName(e.target.value)} fullWidth />
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              label="施設の詳細情報"
-              value={staffDescription}
-              onChange={(e) => setStaffDescription(e.target.value)}
-              fullWidth
-            />
+            <TextField label="施設の詳細情報" value={staffDescription} onChange={(e) => setStaffDescription(e.target.value)} fullWidth />
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <Button variant="contained" component="label" fullWidth>
@@ -653,9 +585,7 @@ export default function StaffShiftPage() {
         </Grid>
         <Grid container spacing={2} sx={{ mt: 2 }}>
           <Grid item xs={12} sm={6}>
-            <Button variant="contained" onClick={createStaff} fullWidth>
-              予約施設追加
-            </Button>
+            <Button variant="contained" onClick={createStaff} fullWidth>予約施設追加</Button>
           </Grid>
         </Grid>
       </Paper>
@@ -673,10 +603,7 @@ export default function StaffShiftPage() {
                 >
                   <ListItemText
                     primary={staff.name}
-                    secondary={
-                      (staff.photoURL ? '写真あり' : '写真なし') +
-                      (staff.hidden ? ' / 非表示' : ' / 表示中')
-                    }
+                    secondary={`${staff.photoURL ? '写真あり' : '写真なし'}${staff.hidden ? ' / 非表示' : ' / 表示中'}`}
                   />
                 </ListItemButton>
               ))}
@@ -694,63 +621,31 @@ export default function StaffShiftPage() {
                       <DatePicker label="日付" value={shiftDate} onChange={(newVal) => setShiftDate(newVal)} />
                     </Grid>
                     <Grid item>
-                      <TimePicker
-                        label="開始時刻(24h)"
-                        ampm={false}
-                        value={startTime}
-                        onChange={(newVal) => setStartTime(newVal)}
-                      />
+                      <TimePicker label="開始時刻(24h)" ampm={false} value={startTime} onChange={(newVal) => setStartTime(newVal)} />
                     </Grid>
                     <Grid item>
-                      <TimePicker
-                        label="終了時刻(24h)"
-                        ampm={false}
-                        value={endTime}
-                        onChange={(newVal) => setEndTime(newVal)}
-                      />
+                      <TimePicker label="終了時刻(24h)" ampm={false} value={endTime} onChange={(newVal) => setEndTime(newVal)} />
                     </Grid>
                   </Grid>
                 </LocalizationProvider>
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="シフトの詳細"
-                      multiline
-                      rows={2}
-                      value={shiftDetail}
-                      onChange={(e) => setShiftDetail(e.target.value)}
-                      fullWidth
-                    />
+                    <TextField label="シフトの詳細" multiline rows={2} value={shiftDetail} onChange={(e) => setShiftDetail(e.target.value)} fullWidth />
                   </Grid>
                   <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="定員"
-                      type="number"
-                      value={shiftCapacity}
-                      onChange={(e) => setShiftCapacity(parseInt(e.target.value, 10) || 1)}
-                      fullWidth
-                    />
+                    <TextField label="定員" type="number" value={shiftCapacity} onChange={(e) => setShiftCapacity(parseInt(e.target.value, 10) || 1)} fullWidth />
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={shiftTentative}
-                          onChange={(e) => setShiftTentative(e.target.checked)}
-                        />
-                      }
+                      control={<Checkbox checked={shiftTentative} onChange={(e) => setShiftTentative(e.target.checked)} />}
                       label="仮予約オプション"
                     />
                   </Grid>
                 </Grid>
-                <Button variant="contained" onClick={createShift} sx={{ mt: 2 }}>
-                  シフト追加
-                </Button>
+                <Button variant="contained" onClick={createShift} sx={{ mt: 2 }}>シフト追加</Button>
               </>
             ) : (
-              <Typography variant="body2" sx={{ mt: 2 }}>
-                左の一覧から施設を選択してください。
-              </Typography>
+              <Typography variant="body2" sx={{ mt: 2 }}>左の一覧から施設を選択してください。</Typography>
             )}
           </Paper>
           <Paper sx={{ p: 2 }}>
@@ -760,20 +655,10 @@ export default function StaffShiftPage() {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={6}>
-                      <DatePicker
-                        label="繰り返し開始日"
-                        value={repeatStartDate}
-                        onChange={(newVal) => setRepeatStartDate(newVal)}
-                        fullWidth
-                      />
+                      <DatePicker label="繰り返し開始日" value={repeatStartDate} onChange={(newVal) => setRepeatStartDate(newVal)} fullWidth />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <DatePicker
-                        label="繰り返し終了日"
-                        value={repeatEndDate}
-                        onChange={(newVal) => setRepeatEndDate(newVal)}
-                        fullWidth
-                      />
+                      <DatePicker label="繰り返し終了日" value={repeatEndDate} onChange={(newVal) => setRepeatEndDate(newVal)} fullWidth />
                     </Grid>
                   </Grid>
                   <FormGroup row sx={{ mt: 2, ml: 1 }}>
@@ -808,85 +693,40 @@ export default function StaffShiftPage() {
                   </FormGroup>
                   <Grid container spacing={2} sx={{ mt: 2 }}>
                     <Grid item xs={6} sm={3}>
-                      <TimePicker
-                        label="シフト開始(24h)"
-                        ampm={false}
-                        value={autoStartTime}
-                        onChange={(newVal) => setAutoStartTime(newVal)}
-                      />
+                      <TimePicker label="シフト開始(24h)" ampm={false} value={autoStartTime} onChange={(newVal) => setAutoStartTime(newVal)} />
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <TimePicker
-                        label="シフト終了(24h)"
-                        ampm={false}
-                        value={autoEndTime}
-                        onChange={(newVal) => setAutoEndTime(newVal)}
-                      />
+                      <TimePicker label="シフト終了(24h)" ampm={false} value={autoEndTime} onChange={(newVal) => setAutoEndTime(newVal)} />
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <TimePicker
-                        label="休憩開始(24h)"
-                        ampm={false}
-                        value={breakStartTime}
-                        onChange={(newVal) => setBreakStartTime(newVal)}
-                      />
+                      <TimePicker label="休憩開始(24h)" ampm={false} value={breakStartTime} onChange={(newVal) => setBreakStartTime(newVal)} />
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <TimePicker
-                        label="休憩終了(24h)"
-                        ampm={false}
-                        value={breakEndTime}
-                        onChange={(newVal) => setBreakEndTime(newVal)}
-                      />
+                      <TimePicker label="休憩終了(24h)" ampm={false} value={breakEndTime} onChange={(newVal) => setBreakEndTime(newVal)} />
                     </Grid>
                   </Grid>
                 </LocalizationProvider>
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="インターバル(分)"
-                      type="number"
-                      value={autoInterval}
-                      onChange={(e) => setAutoInterval(parseInt(e.target.value, 10) || 60)}
-                      fullWidth
-                    />
+                    <TextField label="インターバル(分)" type="number" value={autoInterval} onChange={(e) => setAutoInterval(parseInt(e.target.value, 10) || 60)} fullWidth />
                   </Grid>
                   <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="定員"
-                      type="number"
-                      value={autoShiftCapacity}
-                      onChange={(e) => setAutoShiftCapacity(parseInt(e.target.value, 10) || 1)}
-                      fullWidth
-                    />
+                    <TextField label="定員" type="number" value={autoShiftCapacity} onChange={(e) => setAutoShiftCapacity(parseInt(e.target.value, 10) || 1)} fullWidth />
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <TextField
-                      label="シフトの詳細"
-                      multiline
-                      rows={2}
-                      value={autoShiftDetail}
-                      onChange={(e) => setAutoShiftDetail(e.target.value)}
-                      fullWidth
-                    />
+                    <TextField label="シフトの詳細" multiline rows={2} value={autoShiftDetail} onChange={(e) => setAutoShiftDetail(e.target.value)} fullWidth />
                   </Grid>
                   <Grid item xs={12} sm={2} display="flex" alignItems="center">
                     <FormControlLabel
-                      control={
-                        <Checkbox checked={autoShiftTentative} onChange={(e) => setAutoShiftTentative(e.target.checked)} />
-                      }
+                      control={<Checkbox checked={autoShiftTentative} onChange={(e) => setAutoShiftTentative(e.target.checked)} />}
                       label="仮予約"
                     />
                   </Grid>
                 </Grid>
-                <Button variant="contained" onClick={handleCreateAutoShifts} sx={{ mt: 2 }}>
-                  自動生成
-                </Button>
+                <Button variant="contained" onClick={handleCreateAutoShifts} sx={{ mt: 2 }}>自動生成</Button>
               </>
             ) : (
-              <Typography variant="body2" sx={{ mt: 2 }}>
-                左の一覧から施設を選択してください。
-              </Typography>
+              <Typography variant="body2" sx={{ mt: 2 }}>左の一覧から施設を選択してください。</Typography>
             )}
           </Paper>
         </Grid>
@@ -908,30 +748,24 @@ export default function StaffShiftPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {shiftList
-                  .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
-                  .map((shift) => (
-                    <TableRow key={shift.id}>
-                      <TableCell>{shift.date}</TableCell>
-                      <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
-                      <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
-                      <TableCell>{shift.details || ''}</TableCell>
-                      <TableCell>{selectedStaff?.description || ''}</TableCell>
-                      <TableCell>
-                        {shift.photoURL ? (
-                          <img
-                            src={shift.photoURL}
-                            alt="シフト写真"
-                            style={{ width: '80px', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          'なし'
-                        )}
-                      </TableCell>
-                      <TableCell>{shift.capacity ?? ''}</TableCell>
-                      <TableCell>{shift.tentative ? '仮予約' : '通常'}</TableCell>
-                    </TableRow>
-                  ))}
+                {shiftList.sort((a, b) => (a.startTime > b.startTime ? 1 : -1)).map((shift) => (
+                  <TableRow key={shift.id}>
+                    <TableCell>{shift.date}</TableCell>
+                    <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
+                    <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
+                    <TableCell>{shift.details || ''}</TableCell>
+                    <TableCell>{selectedStaff?.description || ''}</TableCell>
+                    <TableCell>
+                      {shift.photoURL ? (
+                        <img src={shift.photoURL} alt="シフト写真" style={{ width: '80px', objectFit: 'cover' }} />
+                      ) : (
+                        'なし'
+                      )}
+                    </TableCell>
+                    <TableCell>{shift.capacity ?? ''}</TableCell>
+                    <TableCell>{shift.tentative ? '仮予約' : '通常'}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
@@ -943,15 +777,11 @@ export default function StaffShiftPage() {
         anchorReference="anchorPosition"
         anchorPosition={contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
       >
-        <MenuItem onClick={handleToggleHideStaff}>
-          {contextStaff?.hidden ? '表示にする' : '非表示にする'}
-        </MenuItem>
+        <MenuItem onClick={handleToggleHideStaff}>{contextStaff?.hidden ? '表示にする' : '非表示にする'}</MenuItem>
         <MenuItem onClick={handleDeleteStaff}>削除</MenuItem>
       </Menu>
       <Paper sx={{ p: 2, mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          全施設・スタッフの予約状況カレンダー
-        </Typography>
+        <Typography variant="h6" gutterBottom>全施設・スタッフの予約状況カレンダー</Typography>
         <Typography variant="body2" sx={{ mb: 2 }}>
           イベントをクリックすると、予約の確認・承認・削除などが可能です。
         </Typography>
@@ -961,12 +791,7 @@ export default function StaffShiftPage() {
             {staffList.map((staff) => (
               <FormControlLabel
                 key={staff.id}
-                control={
-                  <Checkbox
-                    checked={selectedStaffIdsForCalendar.includes(staff.id)}
-                    onChange={() => handleToggleStaffForCalendar(staff.id)}
-                  />
-                }
+                control={<Checkbox checked={selectedStaffIdsForCalendar.includes(staff.id)} onChange={() => handleToggleStaffForCalendar(staff.id)} />}
                 label={staff.name}
               />
             ))}

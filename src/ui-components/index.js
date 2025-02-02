@@ -4,6 +4,8 @@
  * Any changes to this file will be overwritten when running amplify pull. *
  **************************************************************************/
 
+export { default as QuestionnaireCreateForm } from "./QuestionnaireCreateForm";
+export { default as QuestionnaireUpdateForm } from "./QuestionnaireUpdateForm";
 export { default as ReservationCreateForm } from "./ReservationCreateForm";
 export { default as ReservationUpdateForm } from "./ReservationUpdateForm";
 export { default as ShiftCreateForm } from "./ShiftCreateForm";

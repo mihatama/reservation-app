@@ -1,0 +1,162 @@
+/***************************************************************************
+ * The contents of this file were generated with Amplify Studio.           *
+ * Please refrain from making any modifications to this file.              *
+ * Any changes to this file will be overwritten when running amplify pull. *
+ **************************************************************************/
+
+import * as React from "react";
+import { GridProps, TextFieldProps } from "@aws-amplify/ui-react";
+export declare type EscapeHatchProps = {
+    [elementHierarchy: string]: Record<string, unknown>;
+} | null;
+export declare type VariantValues = {
+    [key: string]: string;
+};
+export declare type Variant = {
+    variantValues: VariantValues;
+    overrides: EscapeHatchProps;
+};
+export declare type ValidationResponse = {
+    hasError: boolean;
+    errorMessage?: string;
+};
+export declare type ValidationFunction<T> = (value: T, validationResponse: ValidationResponse) => ValidationResponse | Promise<ValidationResponse>;
+export declare type QuestionnaireCreateFormInputValues = {
+    reservationID?: string;
+    placeOfVisit?: string;
+    mamaLastName?: string;
+    mamaFirstName?: string;
+    mamaFuriganaLastName?: string;
+    mamaFuriganaFirstName?: string;
+    mamaBirthYear?: string;
+    mamaBirthMonth?: string;
+    mamaBirthDay?: string;
+    childLastName?: string;
+    childFirstName?: string;
+    childFuriganaLastName?: string;
+    childFuriganaFirstName?: string;
+    childBirthYear?: string;
+    childBirthMonth?: string;
+    childBirthDay?: string;
+    childOrder?: string;
+    childSex?: string;
+    occupation?: string;
+    postpartumStatus?: string;
+    homePostalCode?: string;
+    homeAddress?: string;
+    rikaeriPostalCode?: string;
+    rikaeriAddress?: string;
+    deliveryMethod?: string;
+    deliveryWeek?: string;
+    birthWeight?: string;
+    dischargeWeight?: string;
+    dischargeDate?: string;
+    measurement1Date?: string;
+    measurement1?: string;
+    measurement2Date?: string;
+    measurement2?: string;
+    pregnancyCondition?: string;
+    pastMedicalHistory?: string;
+    medication?: string;
+    infectionHistory?: string;
+    familyHistory?: string;
+    visitReason?: string;
+    additionalNotes?: string;
+};
+export declare type QuestionnaireCreateFormValidationValues = {
+    reservationID?: ValidationFunction<string>;
+    placeOfVisit?: ValidationFunction<string>;
+    mamaLastName?: ValidationFunction<string>;
+    mamaFirstName?: ValidationFunction<string>;
+    mamaFuriganaLastName?: ValidationFunction<string>;
+    mamaFuriganaFirstName?: ValidationFunction<string>;
+    mamaBirthYear?: ValidationFunction<string>;
+    mamaBirthMonth?: ValidationFunction<string>;
+    mamaBirthDay?: ValidationFunction<string>;
+    childLastName?: ValidationFunction<string>;
+    childFirstName?: ValidationFunction<string>;
+    childFuriganaLastName?: ValidationFunction<string>;
+    childFuriganaFirstName?: ValidationFunction<string>;
+    childBirthYear?: ValidationFunction<string>;
+    childBirthMonth?: ValidationFunction<string>;
+    childBirthDay?: ValidationFunction<string>;
+    childOrder?: ValidationFunction<string>;
+    childSex?: ValidationFunction<string>;
+    occupation?: ValidationFunction<string>;
+    postpartumStatus?: ValidationFunction<string>;
+    homePostalCode?: ValidationFunction<string>;
+    homeAddress?: ValidationFunction<string>;
+    rikaeriPostalCode?: ValidationFunction<string>;
+    rikaeriAddress?: ValidationFunction<string>;
+    deliveryMethod?: ValidationFunction<string>;
+    deliveryWeek?: ValidationFunction<string>;
+    birthWeight?: ValidationFunction<string>;
+    dischargeWeight?: ValidationFunction<string>;
+    dischargeDate?: ValidationFunction<string>;
+    measurement1Date?: ValidationFunction<string>;
+    measurement1?: ValidationFunction<string>;
+    measurement2Date?: ValidationFunction<string>;
+    measurement2?: ValidationFunction<string>;
+    pregnancyCondition?: ValidationFunction<string>;
+    pastMedicalHistory?: ValidationFunction<string>;
+    medication?: ValidationFunction<string>;
+    infectionHistory?: ValidationFunction<string>;
+    familyHistory?: ValidationFunction<string>;
+    visitReason?: ValidationFunction<string>;
+    additionalNotes?: ValidationFunction<string>;
+};
+export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
+export declare type QuestionnaireCreateFormOverridesProps = {
+    QuestionnaireCreateFormGrid?: PrimitiveOverrideProps<GridProps>;
+    reservationID?: PrimitiveOverrideProps<TextFieldProps>;
+    placeOfVisit?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaLastName?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaFirstName?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaFuriganaLastName?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaFuriganaFirstName?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaBirthYear?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaBirthMonth?: PrimitiveOverrideProps<TextFieldProps>;
+    mamaBirthDay?: PrimitiveOverrideProps<TextFieldProps>;
+    childLastName?: PrimitiveOverrideProps<TextFieldProps>;
+    childFirstName?: PrimitiveOverrideProps<TextFieldProps>;
+    childFuriganaLastName?: PrimitiveOverrideProps<TextFieldProps>;
+    childFuriganaFirstName?: PrimitiveOverrideProps<TextFieldProps>;
+    childBirthYear?: PrimitiveOverrideProps<TextFieldProps>;
+    childBirthMonth?: PrimitiveOverrideProps<TextFieldProps>;
+    childBirthDay?: PrimitiveOverrideProps<TextFieldProps>;
+    childOrder?: PrimitiveOverrideProps<TextFieldProps>;
+    childSex?: PrimitiveOverrideProps<TextFieldProps>;
+    occupation?: PrimitiveOverrideProps<TextFieldProps>;
+    postpartumStatus?: PrimitiveOverrideProps<TextFieldProps>;
+    homePostalCode?: PrimitiveOverrideProps<TextFieldProps>;
+    homeAddress?: PrimitiveOverrideProps<TextFieldProps>;
+    rikaeriPostalCode?: PrimitiveOverrideProps<TextFieldProps>;
+    rikaeriAddress?: PrimitiveOverrideProps<TextFieldProps>;
+    deliveryMethod?: PrimitiveOverrideProps<TextFieldProps>;
+    deliveryWeek?: PrimitiveOverrideProps<TextFieldProps>;
+    birthWeight?: PrimitiveOverrideProps<TextFieldProps>;
+    dischargeWeight?: PrimitiveOverrideProps<TextFieldProps>;
+    dischargeDate?: PrimitiveOverrideProps<TextFieldProps>;
+    measurement1Date?: PrimitiveOverrideProps<TextFieldProps>;
+    measurement1?: PrimitiveOverrideProps<TextFieldProps>;
+    measurement2Date?: PrimitiveOverrideProps<TextFieldProps>;
+    measurement2?: PrimitiveOverrideProps<TextFieldProps>;
+    pregnancyCondition?: PrimitiveOverrideProps<TextFieldProps>;
+    pastMedicalHistory?: PrimitiveOverrideProps<TextFieldProps>;
+    medication?: PrimitiveOverrideProps<TextFieldProps>;
+    infectionHistory?: PrimitiveOverrideProps<TextFieldProps>;
+    familyHistory?: PrimitiveOverrideProps<TextFieldProps>;
+    visitReason?: PrimitiveOverrideProps<TextFieldProps>;
+    additionalNotes?: PrimitiveOverrideProps<TextFieldProps>;
+} & EscapeHatchProps;
+export declare type QuestionnaireCreateFormProps = React.PropsWithChildren<{
+    overrides?: QuestionnaireCreateFormOverridesProps | undefined | null;
+} & {
+    clearOnSuccess?: boolean;
+    onSubmit?: (fields: QuestionnaireCreateFormInputValues) => QuestionnaireCreateFormInputValues;
+    onSuccess?: (fields: QuestionnaireCreateFormInputValues) => void;
+    onError?: (fields: QuestionnaireCreateFormInputValues, errorMessage: string) => void;
+    onChange?: (fields: QuestionnaireCreateFormInputValues) => QuestionnaireCreateFormInputValues;
+    onValidate?: QuestionnaireCreateFormValidationValues;
+} & React.CSSProperties>;
+export default function QuestionnaireCreateForm(props: QuestionnaireCreateFormProps): React.ReactElement;

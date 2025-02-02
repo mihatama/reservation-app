@@ -5,7 +5,7 @@
  **************************************************************************/
 
 import * as React from "react";
-import { GridProps, TextFieldProps } from "@aws-amplify/ui-react";
+import { GridProps, SwitchFieldProps, TextFieldProps } from "@aws-amplify/ui-react";
 export declare type EscapeHatchProps = {
     [elementHierarchy: string]: Record<string, unknown>;
 } | null;
@@ -30,6 +30,7 @@ export declare type ShiftCreateFormInputValues = {
     photo?: string;
     details?: string;
     capacity?: number;
+    tentative?: boolean;
 };
 export declare type ShiftCreateFormValidationValues = {
     staffID?: ValidationFunction<string>;
@@ -40,6 +41,7 @@ export declare type ShiftCreateFormValidationValues = {
     photo?: ValidationFunction<string>;
     details?: ValidationFunction<string>;
     capacity?: ValidationFunction<number>;
+    tentative?: ValidationFunction<boolean>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type ShiftCreateFormOverridesProps = {
@@ -52,6 +54,7 @@ export declare type ShiftCreateFormOverridesProps = {
     photo?: PrimitiveOverrideProps<TextFieldProps>;
     details?: PrimitiveOverrideProps<TextFieldProps>;
     capacity?: PrimitiveOverrideProps<TextFieldProps>;
+    tentative?: PrimitiveOverrideProps<SwitchFieldProps>;
 } & EscapeHatchProps;
 export declare type ShiftCreateFormProps = React.PropsWithChildren<{
     overrides?: ShiftCreateFormOverridesProps | undefined | null;

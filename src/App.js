@@ -12,8 +12,21 @@ import StaffShiftPage from './pages/StaffShiftPage';
 import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
+import QuestionnaireFormPage from './pages/QuestionnaireFormPage';
+import AdminQuestionnaireListPage from './pages/AdminQuestionnaireListPage';
 
-Amplify.configure(awsconfig);
+Amplify.configure({
+  ...awsconfig,
+  API: {
+    REST: {
+      // "ReservationEmailAPI" という名前で、エンドポイントとリージョンを明示的に設定する
+      ReservationEmailAPI: {
+        endpoint: "https://o6zm3tdzxf.execute-api.ap-northeast-1.amazonaws.com/dev",
+        region: "ap-northeast-1"
+      }
+    }
+  }
+});
 
 const muiTheme = createTheme({
   palette: {
@@ -124,6 +137,7 @@ function App() {
             <Typography variant="h6" sx={{ flexGrow: 1 }}>助産院 予約管理アプリ</Typography>
             <Button color="inherit" component={Link} to="/">シフト一覧</Button>
             {isAdmin && <Button color="inherit" component={Link} to="/staff-shift">予約管理</Button>}
+            {isAdmin && <Button color="inherit" component={Link} to="/admin/questionnaires">問診票一覧</Button>}
             {isAuthenticated && <Button color="inherit" component={Link} to="/my-reservations">マイ予約</Button>}
             {isAuthenticated ? (
               <Button color="inherit" onClick={handleSignOut}>サインアウト</Button>
@@ -147,7 +161,9 @@ function App() {
             <Route path="/calendar/:staffId" element={isAuthenticated ? <StaffCalendarPage /> : <Navigate to="/login" />} />
             <Route path="/staff-shift" element={isAdmin ? <StaffShiftPage /> : <Navigate to="/" />} />
             <Route path="/my-reservations" element={isAuthenticated ? <MyReservationsPage /> : <Navigate to="/login" />} />
+            <Route path="/questionnaire/:reservationId" element={isAuthenticated ? <QuestionnaireFormPage /> : <Navigate to="/login" />} />
             <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
+            {isAdmin && <Route path="/admin/questionnaires" element={<AdminQuestionnaireListPage />} />}
           </Routes>
         </Container>
       </MuiThemeProvider>

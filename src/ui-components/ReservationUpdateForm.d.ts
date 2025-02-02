@@ -29,7 +29,10 @@ export declare type ReservationUpdateFormInputValues = {
     startTime?: string;
     endTime?: string;
     clientName?: string;
+    email?: string;
+    phone?: string;
     owner?: string;
+    status?: string;
 };
 export declare type ReservationUpdateFormValidationValues = {
     staffID?: ValidationFunction<string>;
@@ -38,7 +41,10 @@ export declare type ReservationUpdateFormValidationValues = {
     startTime?: ValidationFunction<string>;
     endTime?: ValidationFunction<string>;
     clientName?: ValidationFunction<string>;
+    email?: ValidationFunction<string>;
+    phone?: ValidationFunction<string>;
     owner?: ValidationFunction<string>;
+    status?: ValidationFunction<string>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type ReservationUpdateFormOverridesProps = {
@@ -49,7 +55,10 @@ export declare type ReservationUpdateFormOverridesProps = {
     startTime?: PrimitiveOverrideProps<TextFieldProps>;
     endTime?: PrimitiveOverrideProps<TextFieldProps>;
     clientName?: PrimitiveOverrideProps<TextFieldProps>;
+    email?: PrimitiveOverrideProps<TextFieldProps>;
+    phone?: PrimitiveOverrideProps<TextFieldProps>;
     owner?: PrimitiveOverrideProps<TextFieldProps>;
+    status?: PrimitiveOverrideProps<TextFieldProps>;
 } & EscapeHatchProps;
 export declare type ReservationUpdateFormProps = React.PropsWithChildren<{
     overrides?: ReservationUpdateFormOverridesProps | undefined | null;

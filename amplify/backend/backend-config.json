@@ -1,5 +1,19 @@
 {
   "api": {
+    "ReservationEmailAPI": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "sendReservationConfirmation"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    },
     "reservationapp": {
       "dependsOn": [],
       "output": {
@@ -43,6 +57,31 @@
       },
       "providerPlugin": "awscloudformation",
       "service": "Cognito"
+    }
+  },
+  "function": {
+    "sendReservationConfirmation": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_sendReservationConfirmation_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "sendReservationConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_sendReservationConfirmation_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "sendReservationConfirmation"
+        }
+      ]
     }
   },
   "storage": {

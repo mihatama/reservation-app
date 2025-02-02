@@ -157,6 +157,7 @@ export const getShift = /* GraphQL */ `
       photo
       details
       capacity
+      tentative
       createdAt
       updatedAt
       _version
@@ -183,6 +184,7 @@ export const listShifts = /* GraphQL */ `
         photo
         details
         capacity
+        tentative
         createdAt
         updatedAt
         _version
@@ -219,6 +221,7 @@ export const syncShifts = /* GraphQL */ `
         photo
         details
         capacity
+        tentative
         createdAt
         updatedAt
         _version
@@ -242,7 +245,10 @@ export const getReservation = /* GraphQL */ `
       startTime
       endTime
       clientName
+      email
+      phone
       owner
+      status
       createdAt
       updatedAt
       _version
@@ -267,7 +273,10 @@ export const listReservations = /* GraphQL */ `
         startTime
         endTime
         clientName
+        email
+        phone
         owner
+        status
         createdAt
         updatedAt
         _version
@@ -302,7 +311,193 @@ export const syncReservations = /* GraphQL */ `
         startTime
         endTime
         clientName
+        email
+        phone
         owner
+        status
+        createdAt
+        updatedAt
+        _version
+        _deleted
+        _lastChangedAt
+        __typename
+      }
+      nextToken
+      startedAt
+      __typename
+    }
+  }
+`;
+export const getQuestionnaire = /* GraphQL */ `
+  query GetQuestionnaire($id: ID!) {
+    getQuestionnaire(id: $id) {
+      id
+      reservationID
+      placeOfVisit
+      mamaLastName
+      mamaFirstName
+      mamaFuriganaLastName
+      mamaFuriganaFirstName
+      mamaBirthYear
+      mamaBirthMonth
+      mamaBirthDay
+      childLastName
+      childFirstName
+      childFuriganaLastName
+      childFuriganaFirstName
+      childBirthYear
+      childBirthMonth
+      childBirthDay
+      childOrder
+      childSex
+      occupation
+      postpartumStatus
+      homePostalCode
+      homeAddress
+      rikaeriPostalCode
+      rikaeriAddress
+      deliveryMethod
+      deliveryWeek
+      birthWeight
+      dischargeWeight
+      dischargeDate
+      measurement1Date
+      measurement1
+      measurement2Date
+      measurement2
+      pregnancyCondition
+      pastMedicalHistory
+      medication
+      infectionHistory
+      familyHistory
+      visitReason
+      additionalNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const listQuestionnaires = /* GraphQL */ `
+  query ListQuestionnaires(
+    $filter: ModelQuestionnaireFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listQuestionnaires(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        reservationID
+        placeOfVisit
+        mamaLastName
+        mamaFirstName
+        mamaFuriganaLastName
+        mamaFuriganaFirstName
+        mamaBirthYear
+        mamaBirthMonth
+        mamaBirthDay
+        childLastName
+        childFirstName
+        childFuriganaLastName
+        childFuriganaFirstName
+        childBirthYear
+        childBirthMonth
+        childBirthDay
+        childOrder
+        childSex
+        occupation
+        postpartumStatus
+        homePostalCode
+        homeAddress
+        rikaeriPostalCode
+        rikaeriAddress
+        deliveryMethod
+        deliveryWeek
+        birthWeight
+        dischargeWeight
+        dischargeDate
+        measurement1Date
+        measurement1
+        measurement2Date
+        measurement2
+        pregnancyCondition
+        pastMedicalHistory
+        medication
+        infectionHistory
+        familyHistory
+        visitReason
+        additionalNotes
+        createdAt
+        updatedAt
+        _version
+        _deleted
+        _lastChangedAt
+        __typename
+      }
+      nextToken
+      startedAt
+      __typename
+    }
+  }
+`;
+export const syncQuestionnaires = /* GraphQL */ `
+  query SyncQuestionnaires(
+    $filter: ModelQuestionnaireFilterInput
+    $limit: Int
+    $nextToken: String
+    $lastSync: AWSTimestamp
+  ) {
+    syncQuestionnaires(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+      lastSync: $lastSync
+    ) {
+      items {
+        id
+        reservationID
+        placeOfVisit
+        mamaLastName
+        mamaFirstName
+        mamaFuriganaLastName
+        mamaFuriganaFirstName
+        mamaBirthYear
+        mamaBirthMonth
+        mamaBirthDay
+        childLastName
+        childFirstName
+        childFuriganaLastName
+        childFuriganaFirstName
+        childBirthYear
+        childBirthMonth
+        childBirthDay
+        childOrder
+        childSex
+        occupation
+        postpartumStatus
+        homePostalCode
+        homeAddress
+        rikaeriPostalCode
+        rikaeriAddress
+        deliveryMethod
+        deliveryWeek
+        birthWeight
+        dischargeWeight
+        dischargeDate
+        measurement1Date
+        measurement1
+        measurement2Date
+        measurement2
+        pregnancyCondition
+        pastMedicalHistory
+        medication
+        infectionHistory
+        familyHistory
+        visitReason
+        additionalNotes
         createdAt
         updatedAt
         _version
