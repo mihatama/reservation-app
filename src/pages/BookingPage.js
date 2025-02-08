@@ -80,23 +80,36 @@ export default function BookingPage() {
     const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
     try {
+      // 対象スタッフ・日付の全シフト取得
       const allShifts = await DataStore.query(Shift, (s) =>
         s.staffID_date.eq(staffIDDate)
       );
+      // 同一スタッフ・日付の全予約取得
       const reservations = await DataStore.query(Reservation, (r) =>
         r.staffID_date.eq(staffIDDate)
       );
-      const available = allShifts.filter((shift) => {
-        const isReserved = reservations.some(
-          (res) =>
-            res.startTime === shift.startTime &&
-            res.endTime === shift.endTime
-        );
-        return !isReserved;
-      });
-      const filtered = available.filter((shift) => shift.date === dateStr);
-      const sorted = filtered.sort((a, b) => (a.startTime > b.startTime ? 1 : -1));
-      setAvailableShifts(sorted);
+      // シフトの中で、予約がないもの、もしくは自分が予約したシフトのみを表示
+      const shiftsToDisplay = allShifts
+        .filter((shift) => shift.date === dateStr)
+        .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
+        .map((shift) => {
+          const reservation = reservations.find(
+            (res) =>
+              res.startTime === shift.startTime &&
+              res.endTime === shift.endTime
+          );
+          if (reservation) {
+            if (reservation.owner === userSub) {
+              return { ...shift, reservedByMe: true };
+            } else {
+              // 他ユーザーが予約している枠は表示しない
+              return null;
+            }
+          }
+          return shift;
+        })
+        .filter((shift) => shift !== null);
+      setAvailableShifts(shiftsToDisplay);
     } catch (error) {
       console.error('シフト取得中にエラー:', error);
       alert('シフトを取得できませんでした。');
@@ -108,6 +121,22 @@ export default function BookingPage() {
       alert('予約にはログインが必要です。');
       return;
     }
+
+    // 同一日に既に予約済みの場合は警告を出す（予約自体は継続可能）
+    try {
+      const existingReservations = await DataStore.query(Reservation, (r) =>
+        r.owner.eq(userSub).and((r) => r.date.eq(shift.date))
+      );
+      if (existingReservations.length > 0) {
+        const confirmProceed = window.confirm("本日既に予約済みです。予約を続行しますか？");
+        if (!confirmProceed) {
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('既存予約確認中にエラー:', error);
+    }
+
     try {
       const staffID_dateValue = `${shift.staffID}_${shift.date}`;
       const newReservation = await DataStore.save(
@@ -142,12 +171,14 @@ export default function BookingPage() {
         console.error('Error sending email:', emailError);
       }
 
-      alert('予約が完了しました。');
+      // 予約成功後は、対象シフトの予約状態を「reservedByMe」としてUIに反映
       setAvailableShifts((prev) =>
-        prev.filter(
-          (s) =>
-            !(s.startTime === shift.startTime && s.endTime === shift.endTime)
-        )
+        prev.map((s) => {
+          if (s.id === shift.id) {
+            return { ...s, reservedByMe: true };
+          }
+          return s;
+        })
       );
     } catch (error) {
       console.error('予約作成中にエラー:', error);
@@ -175,7 +206,11 @@ export default function BookingPage() {
             ))}
           </select>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker label="日付" value={selectedDate} onChange={(newValue) => setSelectedDate(newValue)} />
+            <DatePicker
+              label="日付"
+              value={selectedDate}
+              onChange={(newValue) => setSelectedDate(newValue)}
+            />
           </LocalizationProvider>
           <Button variant="contained" onClick={fetchShifts}>シフト確認</Button>
         </Box>
@@ -183,7 +218,9 @@ export default function BookingPage() {
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>選択スタッフ・日付のシフト一覧</Typography>
         {availableShifts.length === 0 ? (
-          <Typography variant="body2" color="textSecondary">シフトがありません、あるいは全て予約済みです。</Typography>
+          <Typography variant="body2" color="textSecondary">
+            シフトがありません、あるいは全て予約済みです。
+          </Typography>
         ) : (
           <TableContainer component={Paper}>
             <Table>
@@ -202,7 +239,15 @@ export default function BookingPage() {
                     <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
                     <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
                     <TableCell>
-                      <Button variant="outlined" onClick={() => createReservation(shift)}>この枠で予約</Button>
+                      {shift.reservedByMe ? (
+                        <Button variant="outlined" disabled>
+                          {`${dayjs(shift.startTime).format('HH:mm')} 予約できました`}
+                        </Button>
+                      ) : (
+                        <Button variant="outlined" onClick={() => createReservation(shift)}>
+                          この枠で予約
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

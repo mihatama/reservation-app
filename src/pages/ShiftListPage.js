@@ -33,12 +33,12 @@ export default function ShiftListPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>スタッフ一覧</Typography>
+      <Typography variant="h5" gutterBottom>予約</Typography>
       <Typography variant="body1" sx={{ mb: 2 }}>
-        スタッフをクリックすると、そのスタッフのカレンダーへ移動します。
+        施設をクリックすると、その施設のカレンダーへ移動します。
       </Typography>
       {!staffList.length ? (
-        <Typography variant="body2" color="textSecondary">登録されたスタッフがいません。</Typography>
+        <Typography variant="body2" color="textSecondary">登録された施設がありません。</Typography>
       ) : (
         staffList.map((staff) => (
           <Paper

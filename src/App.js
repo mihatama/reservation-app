@@ -74,14 +74,14 @@ function LoginPage() {
         signUpAttributes={['family_name', 'given_name', 'phone_number']}
         formFields={{
           signUp: {
-            family_name: { label: '姓', placeholder: '例）山田', order: 1 },
-            given_name: { label: '名', placeholder: '例）太郎', order: 2 },
-            'custom:family_name_kana': { label: '姓（フリガナ）', placeholder: '例）ヤマダ', order: 3, isRequired: false },
-            'custom:given_name_kana': { label: '名（フリガナ）', placeholder: '例）タロウ', order: 4, isRequired: false },
-            phone_number: { label: '日本の電話番号', placeholder: '例）+81XXXXXXXXXX', order: 5, dialCode: '+81' },
-            email: { order: 6 },
-            password: { order: 7 },
-            confirm_password: { order: 8 },
+            family_name: { label: '姓', placeholder: '例）山田', order: 1, isRequired: true },
+            given_name: { label: '名', placeholder: '例）太郎', order: 2, isRequired: true },
+            'custom:family_name_kana': { label: '姓（フリガナ）', placeholder: '例）ヤマダ', order: 3, isRequired: true },
+            'custom:given_name_kana': { label: '名（フリガナ）', placeholder: '例）タロウ', order: 4, isRequired: true },
+            phone_number: { label: '日本の電話番号', placeholder: '例）+81XXXXXXXXXX', order: 5, dialCode: '+81', isRequired: true },
+            email: { order: 6, isRequired: true },
+            password: { order: 7, isRequired: true },
+            confirm_password: { order: 8, isRequired: true },
           },
         }}
       />
@@ -182,7 +182,7 @@ function App() {
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>助産院 予約管理アプリ</Typography>
-            <Button color="inherit" component={Link} to="/">シフト一覧</Button>
+            <Button color="inherit" component={Link} to="/">予約</Button>
             {isAdmin && <Button color="inherit" component={Link} to="/staff-shift">予約管理</Button>}
             {isAdmin && <Button color="inherit" component={Link} to="/admin/questionnaires">問診票一覧</Button>}
             {isAuthenticated && <Button color="inherit" component={Link} to="/my-reservations">マイ予約</Button>}
