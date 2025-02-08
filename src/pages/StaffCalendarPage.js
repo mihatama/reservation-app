@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-// DataStore はそのまま、API は post を個別にインポート
 import { DataStore } from '@aws-amplify/datastore';
 import { post } from '@aws-amplify/api';
 import { Staff, Shift, Reservation } from '../models';
@@ -95,6 +94,7 @@ export default function StaffCalendarPage() {
     }
   };
 
+  // シフトに入っている「確定済み（CONFIRMED）の予約数」を数える
   const getShiftReservationCount = (shift) => {
     return reservations.filter(
       (res) =>
@@ -106,41 +106,86 @@ export default function StaffCalendarPage() {
     ).length;
   };
 
-  const availableShifts = shifts.filter((shift) => {
-    if (shift.capacity == null) return true;
-    return getShiftReservationCount(shift) < shift.capacity;
-  });
-
-  const events = availableShifts.map((shift) => {
+  // すべてのシフトを表示対象にする。イベントデータを組み立て
+  const events = shifts.map((shift) => {
     const start = new Date(shift.startTime);
     const end = new Date(shift.endTime);
     const title = shift.tentative ? '仮予約' : 'シフト';
+    const isFull = shift.capacity != null && getShiftReservationCount(shift) >= shift.capacity;
+
     return {
       id: shift.id,
       title,
       start,
       end,
+      isFull, // このシフトが満枠かどうかを保持
     };
   });
 
+  // イベントの見た目を動的に変更する
+  const eventPropGetter = (event, start, end, isSelected) => {
+    // このユーザーが既に予約しているか
+    const userAlreadyReserved = reservations.some(
+      (res) =>
+        res.owner === userSub &&
+        res.staffID === staffId &&
+        // 日付と時間が同じかどうかで一致判定
+        res.date === dayjs(event.start).format('YYYY-MM-DD') &&
+        res.startTime === event.start.toISOString() &&
+        res.endTime === event.end.toISOString()
+    );
+
+    if (event.isFull || userAlreadyReserved) {
+      return {
+        style: {
+          backgroundColor: '#ccc',
+          cursor: 'not-allowed',
+          opacity: 0.7,
+          pointerEvents: 'none',
+        },
+      };
+    }
+
+    // 通常のイベントは何もしない
+    return {};
+  };
+
+  // イベントがクリックされたとき（予約）
   const handleSelectEvent = async (event) => {
     if (!userSub) {
       alert('ログインが必要です。');
       return;
     }
-    const shiftObj = availableShifts.find((s) => s.id === event.id);
+
+    // シフト特定
+    const shiftObj = shifts.find((s) => s.id === event.id);
     if (!shiftObj) {
       alert('エラー: シフトを特定できませんでした。');
       return;
     }
+
+    // 予約確認ダイアログ
     const confirmBook = window.confirm(
       `このシフトを予約しますか？\n${dayjs(event.start).format('YYYY/MM/DD HH:mm')} ~ ${dayjs(event.end).format('HH:mm')}`
     );
     if (!confirmBook) return;
+
     try {
+      // ユーザーの既存予約リスト
+      const userExistingReservations = reservations.filter((res) => res.owner === userSub);
+
+      // 同一日に既に予約があるかチェック
+      const sameDayReservation = userExistingReservations.find(
+        (res) => res.date === shiftObj.date
+      );
+      if (sameDayReservation) {
+        const proceed = window.confirm('本日既に予約済みです。予約を続行しますか？');
+        if (!proceed) return;
+      }
+
+      // 時間帯が重複する予約がないかチェック
       const shiftStart = new Date(shiftObj.startTime);
       const shiftEnd = new Date(shiftObj.endTime);
-      const userExistingReservations = reservations.filter((res) => res.owner === userSub);
       const hasOverlap = userExistingReservations.some((res) => {
         const existingStart = new Date(res.startTime);
         const existingEnd = new Date(res.endTime);
@@ -150,6 +195,8 @@ export default function StaffCalendarPage() {
         alert('既に同じ時間帯で予約があります。');
         return;
       }
+
+      // 予約レコードを作成
       const staffID_dateValue = `${shiftObj.staffID}_${shiftObj.date}`;
       const newReservation = await DataStore.save(
         new Reservation({
@@ -166,7 +213,7 @@ export default function StaffCalendarPage() {
         })
       );
 
-      // 予約作成後、メール送信用の REST API を呼び出す前にリクエストペイロードをログ出力
+      // 予約作成後、メール送信用の REST API を呼び出す
       const emailPayload = {
         reservationId: newReservation.id,
         clientEmail: userEmail,
@@ -191,20 +238,9 @@ export default function StaffCalendarPage() {
         console.error('【DEBUG】Error sending email:', JSON.stringify(emailError, null, 2));
       }
 
-      if (shiftObj.tentative) {
-        alert('仮予約が完了しました。管理者の承認後に確定します。');
-        return;
-      }
-      const countAfter = getShiftReservationCount(shiftObj) + 1;
-      const cap = shiftObj.capacity;
-      if (cap != null && countAfter >= cap) {
-        const confirmedShift = await DataStore.query(Shift, shiftObj.id);
-        if (confirmedShift) {
-          await DataStore.delete(confirmedShift);
-        }
-      } else {
-        alert('予約が完了しました。');
-      }
+      // ここでは「予約完了」のアラートは表示せず、一覧はそのまま残す
+      // グレーアウト機能は eventPropGetter が担当する
+
     } catch (error) {
       console.error('予約作成エラー:', error);
       alert('予約に失敗しました。');
@@ -213,11 +249,13 @@ export default function StaffCalendarPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>{staff ? `${staff.name} さんのカレンダー` : 'カレンダー'}</Typography>
+      <Typography variant="h5" gutterBottom>
+        {staff ? `${staff.name} さんのカレンダー` : 'カレンダー'}
+      </Typography>
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1">
           前後の矢印で移動し、「月 / 週 / 日」ボタンで切替を行えます。<br />
-          シフトをクリックすると予約できます。
+          シフトをクリックすると予約できます。（満枠・予約済みはグレーアウト）
         </Typography>
         <Box style={{ height: '700px', marginTop: '20px' }}>
           <Calendar
@@ -231,6 +269,7 @@ export default function StaffCalendarPage() {
             defaultView={Views.WEEK}
             onSelectEvent={handleSelectEvent}
             components={{ toolbar: CustomToolbar }}
+            eventPropGetter={eventPropGetter}
           />
         </Box>
       </Paper>
