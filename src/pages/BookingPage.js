@@ -1,270 +1,277 @@
-// BookingPage.js
-import React, { useState, useEffect } from 'react';
-import { DataStore, API } from 'aws-amplify';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { DataStore } from '@aws-amplify/datastore';
+import { post } from '@aws-amplify/api';
 import { Staff, Shift, Reservation } from '../models';
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Container
-} from '@mui/material';
+import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import ja from 'date-fns/locale/ja';
+import { Box, Typography, Paper, Container, Button } from '@mui/material';
 import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { fetchAuthSession } from '@aws-amplify/auth';
 
-export default function BookingPage() {
-  const [staffList, setStaffList] = useState([]);
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [availableShifts, setAvailableShifts] = useState([]);
+const locales = { ja: ja };
+const localizer = dateFnsLocalizer({
+  format: (date, pattern, options) => format(date, pattern, { locale: ja, ...options }),
+  parse: (value, pattern, baseDate, options) => parse(value, pattern, baseDate, { locale: ja, ...options }),
+  startOfWeek: (date, options) => startOfWeek(date, { locale: ja, ...options }),
+  getDay,
+  locales,
+});
 
+function CustomToolbar(props) {
+  const { label, onNavigate, onView } = props;
+  const goToPrev = () => onNavigate('PREV');
+  const goToNext = () => onNavigate('NEXT');
+  const goToToday = () => onNavigate('TODAY');
+  const goToMonth = () => onView('month');
+  const goToWeek = () => onView('week');
+  const goToDay = () => onView('day');
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+      <div>
+        <Button onClick={goToPrev} variant="outlined" sx={{ mr: 1 }}>◀</Button>
+        <Button onClick={goToToday} variant="contained" color="primary" sx={{ mr: 1 }}>今日</Button>
+        <Button onClick={goToNext} variant="outlined">▶</Button>
+      </div>
+      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{label}</Typography>
+      <div>
+        <Button onClick={goToMonth} variant="outlined" sx={{ mr: 1 }}>月</Button>
+        <Button onClick={goToWeek} variant="outlined" sx={{ mr: 1 }}>週</Button>
+        <Button onClick={goToDay} variant="outlined">日</Button>
+      </div>
+    </div>
+  );
+}
+
+export default function StaffCalendarPage() {
+  const { staffId } = useParams();
+  const [staff, setStaff] = useState(null);
+  const [shifts, setShifts] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [userSub, setUserSub] = useState('');
   const [userFullName, setUserFullName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
 
-  // ユーザー情報を取得
   useEffect(() => {
     getUserInfo();
-  }, []);
+    if (staffId) {
+      const staffSubscription = DataStore.observeQuery(Staff, s => s.id.eq(staffId))
+        .subscribe(snapshot => {
+          if (snapshot.items.length > 0) setStaff(snapshot.items[0]);
+        });
+
+      const shiftSubscription = DataStore.observeQuery(Shift, s => s.staffID.eq(staffId))
+        .subscribe(snapshot => setShifts(snapshot.items));
+
+      const reservationSubscription = DataStore.observeQuery(Reservation)
+        .subscribe(snapshot => setReservations(snapshot.items));
+
+      return () => {
+        staffSubscription.unsubscribe();
+        shiftSubscription.unsubscribe();
+        reservationSubscription.unsubscribe();
+      };
+    }
+  }, [staffId]);
 
   const getUserInfo = async () => {
     try {
       const session = await fetchAuthSession();
-      const sub = session.getIdToken().payload.sub || '';
+      const sub = session?.tokens?.idToken?.payload?.sub || '';
       setUserSub(sub);
-      const familyName = session.getIdToken().payload.family_name || '';
-      const givenName = session.getIdToken().payload.given_name || '';
-      setUserFullName(`${familyName} ${givenName}`.trim());
-      const email = session.getIdToken().payload.email || '';
+      const familyName = session?.tokens?.idToken?.payload?.family_name || '';
+      const givenName = session?.tokens?.idToken?.payload?.given_name || '';
+      setUserFullName(`${familyName} ${givenName}`);
+      const email = session?.tokens?.idToken?.payload?.email || '';
       setUserEmail(email);
+      const phone = session?.tokens?.idToken?.payload?.phone_number || '';
+      setUserPhone(phone);
     } catch (err) {
-      console.error('セッション情報の取得に失敗:', err);
+      console.error('Fail to fetch session', err);
     }
   };
 
-  // スタッフ一覧の購読
-  useEffect(() => {
-    const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
-      const visibleStaff = items.filter((s) => s.hidden === false);
-      setStaffList(visibleStaff);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  // シフトに入っている「確定済み（CONFIRMED）の予約数」を数える
+  const getShiftReservationCount = (shift) => {
+    return reservations.filter(
+      (res) =>
+        res.staffID === shift.staffID &&
+        res.date === shift.date &&
+        res.startTime === shift.startTime &&
+        res.endTime === shift.endTime &&
+        res.status === 'CONFIRMED'
+    ).length;
+  };
 
-  // 予約情報の変更を監視（選択スタッフ・日付・ユーザー情報が取得済みの場合）
-  useEffect(() => {
-    if (!selectedStaff || !selectedDate || !userSub) return;
-    const staffIDDate = `${selectedStaff.id}_${selectedDate.format('YYYY-MM-DD')}`;
-    const reservationSub = DataStore.observeQuery(
-      Reservation,
-      (r) => r.staffID_date.eq(staffIDDate)
-    ).subscribe(() => {
-      fetchShifts();
-    });
-    return () => {
-      reservationSub.unsubscribe();
+  // すべてのシフトを表示対象にする。イベントデータを組み立て
+  const events = shifts.map((shift) => {
+    const start = new Date(shift.startTime);
+    const end = new Date(shift.endTime);
+    const title = shift.tentative ? '仮予約' : 'シフト';
+    const isFull = shift.capacity != null && getShiftReservationCount(shift) >= shift.capacity;
+
+    return {
+      id: shift.id,
+      title,
+      start,
+      end,
+      isFull, // このシフトが満枠かどうかを保持
     };
-  }, [selectedStaff, selectedDate, userSub]);
+  });
 
-  // シフト取得処理
-  const fetchShifts = async () => {
-    if (!selectedStaff || !selectedDate) {
-      alert('スタッフと日付を指定してください。');
-      return;
+  // イベントの見た目を動的に変更する
+  const eventPropGetter = (event, start, end, isSelected) => {
+    // このユーザーが既に予約しているか
+    const userAlreadyReserved = reservations.some(
+      (res) =>
+        res.owner === userSub &&
+        res.staffID === staffId &&
+        // 日付と時間が同じかどうかで一致判定
+        res.date === dayjs(event.start).format('YYYY-MM-DD') &&
+        res.startTime === event.start.toISOString() &&
+        res.endTime === event.end.toISOString()
+    );
+
+    if (event.isFull || userAlreadyReserved) {
+      return {
+        style: {
+          backgroundColor: '#ccc',
+          cursor: 'not-allowed',
+          opacity: 0.7,
+          pointerEvents: 'none',
+        },
+      };
     }
-    if (!userSub) {
-      // ユーザー情報が取得できるまで処理しない
-      return;
-    }
-    const dateStr = selectedDate.format('YYYY-MM-DD');
-    const staffIDDate = `${selectedStaff.id}_${dateStr}`;
-    try {
-      // 対象スタッフ・日付の全シフトを取得
-      const allShifts = await DataStore.query(Shift, (s) =>
-        s.staffID_date.eq(staffIDDate)
-      );
-      // 同一スタッフ・日付の全予約を取得
-      const reservations = await DataStore.query(Reservation, (r) =>
-        r.staffID_date.eq(staffIDDate)
-      );
-      // シフトの中で、予約がないものはそのまま、
-      // 予約済みの場合は、予約したユーザーが自分の場合のみ表示する
-      const shiftsToDisplay = allShifts
-        .filter((shift) => shift.date === dateStr)
-        .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
-        .map((shift) => {
-          const reservation = reservations.find(
-            (res) =>
-              res.startTime === shift.startTime &&
-              res.endTime === shift.endTime
-          );
-          if (reservation) {
-            if (reservation.owner === userSub) {
-              return { ...shift, reservedByMe: true };
-            } else {
-              // 他ユーザーが予約している枠は表示しない
-              return null;
-            }
-          }
-          return shift;
-        })
-        .filter((shift) => shift !== null);
-      setAvailableShifts(shiftsToDisplay);
-    } catch (error) {
-      console.error('シフト取得中にエラー:', error);
-      alert('シフトを取得できませんでした。');
-    }
+
+    // 通常のイベントは何もしない
+    return {};
   };
 
-  // 予約作成処理
-  const createReservation = async (shift) => {
+  // イベントがクリックされたとき（予約）
+  const handleSelectEvent = async (event) => {
     if (!userSub) {
-      alert('予約にはログインが必要です。');
+      alert('ログインが必要です。');
       return;
     }
 
-    // 同一日に既に予約済みか確認（予約があれば確認ダイアログを表示）
-    try {
-      const existingReservations = await DataStore.query(Reservation, (r) =>
-        r.owner.eq(userSub).and((r) => r.date.eq(shift.date))
-      );
-      if (existingReservations.length > 0) {
-        const confirmProceed = window.confirm("本日既に予約済みです。予約を続行しますか？");
-        if (!confirmProceed) {
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('既存予約確認中にエラー:', error);
+    // シフト特定
+    const shiftObj = shifts.find((s) => s.id === event.id);
+    if (!shiftObj) {
+      alert('エラー: シフトを特定できませんでした。');
+      return;
     }
 
+    // 予約確認ダイアログ
+    const confirmBook = window.confirm(
+      `このシフトを予約しますか？\n${dayjs(event.start).format('YYYY/MM/DD HH:mm')} ~ ${dayjs(event.end).format('HH:mm')}`
+    );
+    if (!confirmBook) return;
+
     try {
-      const staffID_dateValue = `${shift.staffID}_${shift.date}`;
+      // ユーザーの既存予約リスト
+      const userExistingReservations = reservations.filter((res) => res.owner === userSub);
+
+      // 同一日に既に予約があるかチェック
+      const sameDayReservation = userExistingReservations.find(
+        (res) => res.date === shiftObj.date
+      );
+      if (sameDayReservation) {
+        const proceed = window.confirm('本日既に予約済みです。予約を続行しますか？');
+        if (!proceed) return;
+      }
+
+      // 時間帯が重複する予約がないかチェック
+      const shiftStart = new Date(shiftObj.startTime);
+      const shiftEnd = new Date(shiftObj.endTime);
+      const hasOverlap = userExistingReservations.some((res) => {
+        const existingStart = new Date(res.startTime);
+        const existingEnd = new Date(res.endTime);
+        return shiftStart < existingEnd && shiftEnd > existingStart;
+      });
+      if (hasOverlap) {
+        alert('既に同じ時間帯で予約があります。');
+        return;
+      }
+
+      // 予約レコードを作成
+      const staffID_dateValue = `${shiftObj.staffID}_${shiftObj.date}`;
       const newReservation = await DataStore.save(
         new Reservation({
-          staffID: shift.staffID,
+          staffID: shiftObj.staffID,
           staffID_date: staffID_dateValue,
-          date: shift.date,
-          startTime: shift.startTime,
-          endTime: shift.endTime,
+          date: shiftObj.date,
+          startTime: shiftObj.startTime,
+          endTime: shiftObj.endTime,
           clientName: userFullName,
           owner: userSub,
-          status: shift.tentative ? 'PENDING' : 'CONFIRMED',
+          email: userEmail,
+          phone: userPhone,
+          status: shiftObj.tentative ? 'PENDING' : 'CONFIRMED',
         })
       );
-      console.log("Reservation created:", newReservation);
 
-      // メール送信APIを呼び出し
+      // 予約作成後、メール送信用の REST API を呼び出す
+      const emailPayload = {
+        reservationId: newReservation.id,
+        clientEmail: userEmail,
+        clientName: userFullName,
+        reservationDate: shiftObj.date,
+        startTime: shiftObj.startTime,
+        endTime: shiftObj.endTime,
+        questionnaireLink: `${window.location.origin}/questionnaire/${newReservation.id}`
+      };
+      console.log("【DEBUG】メール送信リクエストペイロード:", JSON.stringify(emailPayload, null, 2));
+
       try {
-        const emailResponse = await API.post('ReservationEmailAPI', '/send-email', {
-          body: {
-            reservationId: newReservation.id,
-            clientEmail: userEmail,
-            clientName: userFullName,
-            reservationDate: shift.date,
-            startTime: shift.startTime,
-            endTime: shift.endTime,
-            questionnaireLink: `${window.location.origin}/questionnaire/${newReservation.id}`,
+        const emailResponse = await post({
+          apiName: "ReservationEmailAPI",
+          path: "/send-email",
+          options: {
+            body: emailPayload
           }
-        });
-        console.log('Email API response:', emailResponse);
+        }).response;
+        console.log('【DEBUG】Email API response:', JSON.stringify(emailResponse, null, 2));
       } catch (emailError) {
-        console.error('Error sending email:', emailError);
+        console.error('【DEBUG】Error sending email:', JSON.stringify(emailError, null, 2));
       }
 
-      // 予約成功後、対象シフトを「予約済み（reservedByMe）」にしてUI上で反映
-      setAvailableShifts((prev) =>
-        prev.map((s) => {
-          if (s.id === shift.id) {
-            return { ...s, reservedByMe: true };
-          }
-          return s;
-        })
-      );
+      // ここでは「予約完了」のアラートは表示せず、一覧はそのまま残す
+      // グレーアウト機能は eventPropGetter が担当する
+
     } catch (error) {
-      console.error('予約作成中にエラー:', error);
-      alert('予約作成に失敗しました。');
+      console.error('予約作成エラー:', error);
+      alert('予約に失敗しました。');
     }
   };
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>予約画面</Typography>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>予約入力</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <select
-            style={{ minWidth: '150px', padding: '8px' }}
-            value={selectedStaff?.id || ''}
-            onChange={(e) => {
-              const found = staffList.find((s) => s.id === e.target.value);
-              setSelectedStaff(found || null);
-            }}
-          >
-            <option value="" disabled>-- スタッフ選択 --</option>
-            {staffList.map((staff) => (
-              <option value={staff.id} key={staff.id}>{staff.name}</option>
-            ))}
-          </select>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="日付"
-              value={selectedDate}
-              onChange={(newValue) => setSelectedDate(newValue)}
-            />
-          </LocalizationProvider>
-          <Button variant="contained" onClick={fetchShifts}>シフト確認</Button>
-        </Box>
-      </Paper>
+      <Typography variant="h5" gutterBottom>
+        {staff ? `${staff.name} さんのカレンダー` : 'カレンダー'}
+      </Typography>
       <Paper sx={{ p: 2 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>選択スタッフ・日付のシフト一覧</Typography>
-        {availableShifts.length === 0 ? (
-          <Typography variant="body2" color="textSecondary">
-            シフトがありません、あるいは全て予約済みです。
-          </Typography>
-        ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>日付</TableCell>
-                  <TableCell>開始</TableCell>
-                  <TableCell>終了</TableCell>
-                  <TableCell>予約</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {availableShifts.map((shift) => (
-                  <TableRow key={shift.id}>
-                    <TableCell>{shift.date}</TableCell>
-                    <TableCell>{dayjs(shift.startTime).format('HH:mm')}</TableCell>
-                    <TableCell>{dayjs(shift.endTime).format('HH:mm')}</TableCell>
-                    <TableCell>
-                      {shift.reservedByMe ? (
-                        <Button variant="outlined" disabled>
-                          {`${dayjs(shift.startTime).format('HH:mm')} 予約できました`}
-                        </Button>
-                      ) : (
-                        <Button variant="outlined" onClick={() => createReservation(shift)}>
-                          この枠で予約
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+        <Typography variant="subtitle1">
+          前後の矢印で移動し、「月 / 週 / 日」ボタンで切替を行えます。<br />
+          シフトをクリックすると予約できます。（満枠・予約済みはグレーアウト）
+        </Typography>
+        <Box style={{ height: '700px', marginTop: '20px' }}>
+          <Calendar
+            localizer={localizer}
+            culture="ja"
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: '100%' }}
+            views={['month', 'week', 'day']}
+            defaultView={Views.WEEK}
+            onSelectEvent={handleSelectEvent}
+            components={{ toolbar: CustomToolbar }}
+            eventPropGetter={eventPropGetter}
+          />
+        </Box>
       </Paper>
     </Container>
   );
