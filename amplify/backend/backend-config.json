@@ -66,24 +66,6 @@
       "service": "Lambda"
     }
   },
-  "parameters": {
-    "AMPLIFY_function_sendReservationConfirmation_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "sendReservationConfirmation"
-        }
-      ]
-    },
-    "AMPLIFY_function_sendReservationConfirmation_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "sendReservationConfirmation"
-        }
-      ]
-    }
-  },
   "storage": {
     "s362b9d497": {
       "dependsOn": [],

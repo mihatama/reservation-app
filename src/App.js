@@ -15,11 +15,11 @@ import MyReservationsPage from './pages/MyReservationsPage';
 import QuestionnaireFormPage from './pages/QuestionnaireFormPage';
 import AdminQuestionnaireListPage from './pages/AdminQuestionnaireListPage';
 
+// Amplify の設定（aws-exports の内容に加え、REST API の設定）
 Amplify.configure({
   ...awsconfig,
   API: {
     REST: {
-      // "ReservationEmailAPI" という名前で、エンドポイントとリージョンを明示的に設定する
       ReservationEmailAPI: {
         endpoint: "https://o6zm3tdzxf.execute-api.ap-northeast-1.amazonaws.com/dev",
         region: "ap-northeast-1"
@@ -28,6 +28,7 @@ Amplify.configure({
   }
 });
 
+// Material-UI 用のテーマ設定
 const muiTheme = createTheme({
   palette: {
     primary: { main: '#e91e63' },
@@ -38,6 +39,7 @@ const muiTheme = createTheme({
   },
 });
 
+// Amplify UI 用のカスタムテーマ設定
 const amplifyTheme = {
   name: 'custom-amplify-theme',
   tokens: {
@@ -52,10 +54,23 @@ const amplifyTheme = {
   },
 };
 
+// ログインページコンポーネント
 function LoginPage() {
+  const navigate = useNavigate();
+  console.log('LoginPage rendered at', new Date());
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
       <Authenticator
+        // onAuthUIStateChange により認証状態が変化したときにログ出力し、"signedin" または "signedIn" ならリダイレクト
+        onAuthUIStateChange={(nextAuthState, authData) => {
+          console.log("onAuthUIStateChange fired:", nextAuthState, authData, "at", new Date());
+          if (nextAuthState === 'signedin' || nextAuthState === 'signedIn') {
+            console.log("User signed in detected via onAuthUIStateChange. Redirecting to '/' at", new Date());
+            navigate('/');
+          } else {
+            console.log("Auth state changed to:", nextAuthState);
+          }
+        }}
         signUpAttributes={['family_name', 'given_name', 'phone_number']}
         formFields={{
           signUp: {
@@ -74,31 +89,48 @@ function LoginPage() {
   );
 }
 
+// 認証済みの場合のみ子コンポーネントをレンダリングするラッパー
+function PrivateRoute({ children, isAuthenticated }) {
+  console.log("PrivateRoute: isAuthenticated =", isAuthenticated, "at", new Date());
+  return isAuthenticated ? children : <Navigate to="/login" />;
+}
+
+// 管理者グループの場合のみ子コンポーネントをレンダリングするラッパー
+function AdminRoute({ children, isAdmin }) {
+  console.log("AdminRoute: isAdmin =", isAdmin, "at", new Date());
+  return isAdmin ? children : <Navigate to="/" />;
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userGroups, setUserGroups] = useState([]);
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
 
+  console.log('App 初期化: isAuthenticated =', isAuthenticated, "at", new Date());
+
+  // 現在のユーザー状態をチェックする関数
   const checkCurrentUser = async () => {
+    console.log('checkCurrentUser: Checking current user at', new Date());
     try {
       const session = await fetchAuthSession();
-      // 変更点：認証状態をチェックし、最新の API では session.idToken を利用する
-      if (session.isSignedIn && session.idToken) {
-        const payload = session.idToken.payload;
+      console.log('checkCurrentUser: Session:', session, "at", new Date());
+      if (session.tokens && session.tokens.idToken) {
+        const payload = session.tokens.idToken.payload;
         const groups = payload['cognito:groups'] || [];
         const currentUsername = payload.email || '';
+        console.log('checkCurrentUser: User authenticated. Username:', currentUsername, 'Groups:', groups, "at", new Date());
         setUserGroups(groups);
         setUsername(currentUsername);
         setIsAuthenticated(true);
       } else {
-        // 未認証の場合は状態をクリア
+        console.log('checkCurrentUser: No valid idToken found at', new Date());
         setIsAuthenticated(false);
         setUserGroups([]);
         setUsername('');
       }
     } catch (error) {
-      console.error('checkCurrentUser error:', error);
+      console.error('checkCurrentUser: Error occurred:', error, "at", new Date());
       setIsAuthenticated(false);
       setUserGroups([]);
       setUsername('');
@@ -106,13 +138,17 @@ function App() {
   };
 
   useEffect(() => {
+    console.log('useEffect: Setting up Hub listener at', new Date());
     const unsubscribe = Hub.listen('auth', async (data) => {
       const { payload } = data;
-      console.log('=== Hub event ===', payload.event, payload);
-      if (payload.event === 'signIn' || payload.event === 'signUp') {
+      console.log('Hub Event:', payload.event, "at", new Date(), "Payload:", payload);
+      // ここで "signedIn" もチェックするように修正
+      if (['signIn', 'signedIn', 'signUp'].includes(payload.event)) {
         await checkCurrentUser();
+        console.log('Hub Event: Navigating to "/" after sign in/up at', new Date());
         navigate('/');
       } else if (payload.event === 'signOut') {
+        console.log('Hub Event: signOut event received at', new Date());
         setIsAuthenticated(false);
         setUsername('');
         setUserGroups([]);
@@ -120,18 +156,21 @@ function App() {
     });
     checkCurrentUser();
     return () => {
+      console.log('useEffect: Cleaning up Hub listener at', new Date());
       unsubscribe();
     };
   }, [navigate]);
 
+  // サインアウト処理
   const handleSignOut = async () => {
     try {
       await signOut();
       setIsAuthenticated(false);
       setUsername('');
       setUserGroups([]);
+      console.log('handleSignOut: Successfully signed out at', new Date());
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('handleSignOut: Sign out error:', error, "at", new Date());
     }
   };
 
@@ -165,13 +204,59 @@ function App() {
             )}
           </Box>
           <Routes>
-            <Route path="/" element={<ShiftListPage />} />
-            <Route path="/calendar/:staffId" element={isAuthenticated ? <StaffCalendarPage /> : <Navigate to="/login" />} />
-            <Route path="/staff-shift" element={isAdmin ? <StaffShiftPage /> : <Navigate to="/" />} />
-            <Route path="/my-reservations" element={isAuthenticated ? <MyReservationsPage /> : <Navigate to="/login" />} />
-            <Route path="/questionnaire/:reservationId" element={isAuthenticated ? <QuestionnaireFormPage /> : <Navigate to="/login" />} />
+            <Route
+              path="/"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <ShiftListPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/calendar/:staffId"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <StaffCalendarPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/staff-shift"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <AdminRoute isAdmin={isAdmin}>
+                    <StaffShiftPage />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/my-reservations"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <MyReservationsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/questionnaire/:reservationId"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <QuestionnaireFormPage />
+                </PrivateRoute>
+              }
+            />
             <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
-            {isAdmin && <Route path="/admin/questionnaires" element={<AdminQuestionnaireListPage />} />}
+            <Route
+              path="/admin/questionnaires"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <AdminRoute isAdmin={isAdmin}>
+                    <AdminQuestionnaireListPage />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </Container>
       </MuiThemeProvider>
