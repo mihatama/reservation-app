@@ -31,6 +31,7 @@ export default function BookingPage() {
   const [userFullName, setUserFullName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
+  // ユーザー情報を取得
   useEffect(() => {
     getUserInfo();
   }, []);
@@ -46,10 +47,11 @@ export default function BookingPage() {
       const email = session.getIdToken().payload.email || '';
       setUserEmail(email);
     } catch (err) {
-      console.error('Fail to fetch session', err);
+      console.error('セッション情報の取得に失敗:', err);
     }
   };
 
+  // スタッフ一覧の購読
   useEffect(() => {
     const subscription = DataStore.observeQuery(Staff).subscribe(({ items }) => {
       const visibleStaff = items.filter((s) => s.hidden === false);
@@ -58,8 +60,9 @@ export default function BookingPage() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // 予約情報の変更を監視（選択スタッフ・日付・ユーザー情報が取得済みの場合）
   useEffect(() => {
-    if (!selectedStaff || !selectedDate) return;
+    if (!selectedStaff || !selectedDate || !userSub) return;
     const staffIDDate = `${selectedStaff.id}_${selectedDate.format('YYYY-MM-DD')}`;
     const reservationSub = DataStore.observeQuery(
       Reservation,
@@ -70,25 +73,31 @@ export default function BookingPage() {
     return () => {
       reservationSub.unsubscribe();
     };
-  }, [selectedStaff, selectedDate]);
+  }, [selectedStaff, selectedDate, userSub]);
 
+  // シフト取得処理
   const fetchShifts = async () => {
     if (!selectedStaff || !selectedDate) {
       alert('スタッフと日付を指定してください。');
       return;
     }
+    if (!userSub) {
+      // ユーザー情報が取得できるまで処理しない
+      return;
+    }
     const dateStr = selectedDate.format('YYYY-MM-DD');
     const staffIDDate = `${selectedStaff.id}_${dateStr}`;
     try {
-      // 対象スタッフ・日付の全シフト取得
+      // 対象スタッフ・日付の全シフトを取得
       const allShifts = await DataStore.query(Shift, (s) =>
         s.staffID_date.eq(staffIDDate)
       );
-      // 同一スタッフ・日付の全予約取得
+      // 同一スタッフ・日付の全予約を取得
       const reservations = await DataStore.query(Reservation, (r) =>
         r.staffID_date.eq(staffIDDate)
       );
-      // シフトの中で、予約がないもの、もしくは自分が予約したシフトのみを表示
+      // シフトの中で、予約がないものはそのまま、
+      // 予約済みの場合は、予約したユーザーが自分の場合のみ表示する
       const shiftsToDisplay = allShifts
         .filter((shift) => shift.date === dateStr)
         .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
@@ -116,13 +125,14 @@ export default function BookingPage() {
     }
   };
 
+  // 予約作成処理
   const createReservation = async (shift) => {
     if (!userSub) {
       alert('予約にはログインが必要です。');
       return;
     }
 
-    // 同一日に既に予約済みの場合は警告を出す（予約自体は継続可能）
+    // 同一日に既に予約済みか確認（予約があれば確認ダイアログを表示）
     try {
       const existingReservations = await DataStore.query(Reservation, (r) =>
         r.owner.eq(userSub).and((r) => r.date.eq(shift.date))
@@ -153,7 +163,7 @@ export default function BookingPage() {
       );
       console.log("Reservation created:", newReservation);
 
-      // メール送信APIの呼び出しとレスポンスのログ出力
+      // メール送信APIを呼び出し
       try {
         const emailResponse = await API.post('ReservationEmailAPI', '/send-email', {
           body: {
@@ -171,7 +181,7 @@ export default function BookingPage() {
         console.error('Error sending email:', emailError);
       }
 
-      // 予約成功後は、対象シフトの予約状態を「reservedByMe」としてUIに反映
+      // 予約成功後、対象シフトを「予約済み（reservedByMe）」にしてUI上で反映
       setAvailableShifts((prev) =>
         prev.map((s) => {
           if (s.id === shift.id) {
