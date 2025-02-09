@@ -14,6 +14,8 @@ import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
 import QuestionnaireFormPage from './pages/QuestionnaireFormPage';
 import AdminQuestionnaireListPage from './pages/AdminQuestionnaireListPage';
+// ↓ 新規で作成する編集ページコンポーネント
+import EditQuestionnairePage from './pages/EditQuestionnairePage'; 
 
 // Amplify の設定（aws-exports の内容に加え、REST API の設定）
 Amplify.configure({
@@ -57,18 +59,12 @@ const amplifyTheme = {
 // ログインページコンポーネント
 function LoginPage() {
   const navigate = useNavigate();
-  console.log('LoginPage rendered at', new Date());
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
       <Authenticator
-        // onAuthUIStateChange により認証状態が変化したときにログ出力し、"signedin" または "signedIn" ならリダイレクト
         onAuthUIStateChange={(nextAuthState, authData) => {
-          console.log("onAuthUIStateChange fired:", nextAuthState, authData, "at", new Date());
           if (nextAuthState === 'signedin' || nextAuthState === 'signedIn') {
-            console.log("User signed in detected via onAuthUIStateChange. Redirecting to '/' at", new Date());
             navigate('/');
-          } else {
-            console.log("Auth state changed to:", nextAuthState);
           }
         }}
         signUpAttributes={['family_name', 'given_name', 'phone_number']}
@@ -91,13 +87,11 @@ function LoginPage() {
 
 // 認証済みの場合のみ子コンポーネントをレンダリングするラッパー
 function PrivateRoute({ children, isAuthenticated }) {
-  console.log("PrivateRoute: isAuthenticated =", isAuthenticated, "at", new Date());
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
 // 管理者グループの場合のみ子コンポーネントをレンダリングするラッパー
 function AdminRoute({ children, isAdmin }) {
-  console.log("AdminRoute: isAdmin =", isAdmin, "at", new Date());
   return isAdmin ? children : <Navigate to="/" />;
 }
 
@@ -107,30 +101,23 @@ function App() {
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
 
-  console.log('App 初期化: isAuthenticated =', isAuthenticated, "at", new Date());
-
   // 現在のユーザー状態をチェックする関数
   const checkCurrentUser = async () => {
-    console.log('checkCurrentUser: Checking current user at', new Date());
     try {
       const session = await fetchAuthSession();
-      console.log('checkCurrentUser: Session:', session, "at", new Date());
       if (session.tokens && session.tokens.idToken) {
         const payload = session.tokens.idToken.payload;
         const groups = payload['cognito:groups'] || [];
         const currentUsername = payload.email || '';
-        console.log('checkCurrentUser: User authenticated. Username:', currentUsername, 'Groups:', groups, "at", new Date());
         setUserGroups(groups);
         setUsername(currentUsername);
         setIsAuthenticated(true);
       } else {
-        console.log('checkCurrentUser: No valid idToken found at', new Date());
         setIsAuthenticated(false);
         setUserGroups([]);
         setUsername('');
       }
     } catch (error) {
-      console.error('checkCurrentUser: Error occurred:', error, "at", new Date());
       setIsAuthenticated(false);
       setUserGroups([]);
       setUsername('');
@@ -138,39 +125,29 @@ function App() {
   };
 
   useEffect(() => {
-    console.log('useEffect: Setting up Hub listener at', new Date());
     const unsubscribe = Hub.listen('auth', async (data) => {
       const { payload } = data;
-      console.log('Hub Event:', payload.event, "at", new Date(), "Payload:", payload);
-      // ここで "signedIn" もチェックするように修正
       if (['signIn', 'signedIn', 'signUp'].includes(payload.event)) {
         await checkCurrentUser();
-        console.log('Hub Event: Navigating to "/" after sign in/up at', new Date());
         navigate('/');
       } else if (payload.event === 'signOut') {
-        console.log('Hub Event: signOut event received at', new Date());
         setIsAuthenticated(false);
         setUsername('');
         setUserGroups([]);
       }
     });
     checkCurrentUser();
-    return () => {
-      console.log('useEffect: Cleaning up Hub listener at', new Date());
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [navigate]);
 
-  // サインアウト処理
   const handleSignOut = async () => {
     try {
       await signOut();
       setIsAuthenticated(false);
       setUsername('');
       setUserGroups([]);
-      console.log('handleSignOut: Successfully signed out at', new Date());
     } catch (error) {
-      console.error('handleSignOut: Sign out error:', error, "at", new Date());
+      console.error('Sign out error:', error);
     }
   };
 
@@ -204,6 +181,7 @@ function App() {
             )}
           </Box>
           <Routes>
+            {/* 一般ユーザー or 管理者共通 */}
             <Route
               path="/"
               element={
@@ -217,16 +195,6 @@ function App() {
               element={
                 <PrivateRoute isAuthenticated={isAuthenticated}>
                   <StaffCalendarPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/staff-shift"
-              element={
-                <PrivateRoute isAuthenticated={isAuthenticated}>
-                  <AdminRoute isAdmin={isAdmin}>
-                    <StaffShiftPage />
-                  </AdminRoute>
                 </PrivateRoute>
               }
             />
@@ -246,7 +214,22 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
+            <Route
+              path="/login"
+              element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />}
+            />
+
+            {/* 管理者専用 */}
+            <Route
+              path="/staff-shift"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <AdminRoute isAdmin={isAdmin}>
+                    <StaffShiftPage />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
             <Route
               path="/admin/questionnaires"
               element={
@@ -257,6 +240,22 @@ function App() {
                 </PrivateRoute>
               }
             />
+
+            {/*
+              ▼▼▼ ここがポイント ▼▼▼
+              「edit-questionnaire/:questionnaireId」でのページを追加
+            */}
+            <Route
+              path="/edit-questionnaire/:questionnaireId"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <AdminRoute isAdmin={isAdmin}>
+                    <EditQuestionnairePage />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
+
           </Routes>
         </Container>
       </MuiThemeProvider>
