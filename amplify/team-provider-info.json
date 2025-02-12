@@ -26,7 +26,7 @@
       "function": {
         "sendReservationConfirmation": {
           "deploymentBucketName": "amplify-reservationapp-dev-ddcac-deployment",
-          "s3Key": "amplify-builds/sendReservationConfirmation-54515378784b4e695068-build.zip"
+          "s3Key": "amplify-builds/sendReservationConfirmation-6e757a50784e74485a68-build.zip"
         }
       }
     }

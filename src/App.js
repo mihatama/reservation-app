@@ -1,3 +1,4 @@
+// App.js
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
@@ -8,14 +9,17 @@ import { Authenticator, ThemeProvider as AmplifyThemeProvider } from '@aws-ampli
 import '@aws-amplify/ui-react/styles.css';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
+
 import StaffShiftPage from './pages/StaffShiftPage';
 import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
 import MyReservationsPage from './pages/MyReservationsPage';
 import QuestionnaireFormPage from './pages/QuestionnaireFormPage';
 import AdminQuestionnaireListPage from './pages/AdminQuestionnaireListPage';
-// ↓ 新規で作成する編集ページコンポーネント
-import EditQuestionnairePage from './pages/EditQuestionnairePage'; 
+import EditQuestionnairePage from './pages/EditQuestionnairePage';
+
+// ▼ 新しく追加した電子カルテページのインポート
+import MedicalRecordPage from './pages/MedicalRecordPage'; 
 
 // Amplify の設定（aws-exports の内容に加え、REST API の設定）
 Amplify.configure({
@@ -240,11 +244,7 @@ function App() {
                 </PrivateRoute>
               }
             />
-
-            {/*
-              ▼▼▼ ここがポイント ▼▼▼
-              「edit-questionnaire/:questionnaireId」でのページを追加
-            */}
+            {/* edit-questionnaire */}
             <Route
               path="/edit-questionnaire/:questionnaireId"
               element={
@@ -256,6 +256,17 @@ function App() {
               }
             />
 
+            {/* ▼▼▼ 新規追加: 電子カルテ用ルート ▼▼▼ */}
+            <Route
+              path="/medical-record"
+              element={
+                <PrivateRoute isAuthenticated={isAuthenticated}>
+                  <AdminRoute isAdmin={isAdmin}>
+                    <MedicalRecordPage />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </Container>
       </MuiThemeProvider>

@@ -102,3 +102,64 @@ type Questionnaire
   visitReason: String!
   additionalNotes: String
 }
+type MedicalRecord
+  @model
+  @auth(rules: [
+    { allow: public, operations: [create, read, update, delete] }
+  ]) {
+  id: ID!
+
+  # 基本情報
+  recordNo: String
+  recordMonth: String
+  recordDay: String
+  place: String        # 例）宝塚・西宮・名古屋・浦和・訪問・産後ケア
+  staffName: String
+  traineeName: String
+
+  # お子様情報
+  childName: String
+  childAgeYears: String
+  childAgeMonths: String
+  childAgeDays: String
+  weight: String         # 体重
+  weightGain: String     # 増加量(g/日)
+
+  # 授乳/離乳情報
+  breastInterval: String # 母乳間隔
+  formula: String        # ミルク
+  expressedMilk: String  # 搾母乳
+  babyFood: String       # 離乳食
+
+  # 排泄回数
+  stoolCount: String  # 便回数
+  urineCount: String  # 尿回数
+
+  # 児の発達
+  childDevelopment: String
+  weaningStatus: String   # 卒乳/断乳
+
+  # 乳房ケア
+  dayCount: String        # 日目 (乳房ケア上の○日目など)
+  breastShape: String     # Ⅰ型・Ⅱa型・Ⅱb型・Ⅲ型
+  nippleUsage: String     # ニップル使用 有無など
+  expressionTimes: String # 搾乳1日回数
+  expressionTool: String  # 搾乳器（手動・電動）
+  nippleCondition: String # 白斑・亀裂・発赤など
+  pain: String            # 疼痛（乳輪・乳頭・乳房等）
+  breastfeedingPosition: String  # 授乳姿勢
+
+  # 家族サポートなど
+  familySupport: String
+
+  # O, S, P, 乳房診断などメモ
+  oMemo: String
+  sMemo: String
+  pMemo: String
+  breastDiagnosis: String
+
+  # 支払い関連
+  paymentMethod: String  # カード/PayPay/現金など
+  additionalFees: String # 初診料, チケット, レンタルタオル等の選択
+  otherNotes: String     # その他の記入欄
+}
