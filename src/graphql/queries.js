@@ -511,3 +511,174 @@ export const syncQuestionnaires = /* GraphQL */ `
     }
   }
 `;
+export const getMedicalRecord = /* GraphQL */ `
+  query GetMedicalRecord($id: ID!) {
+    getMedicalRecord(id: $id) {
+      id
+      recordNo
+      recordMonth
+      recordDay
+      place
+      staffName
+      traineeName
+      childName
+      childAgeYears
+      childAgeMonths
+      childAgeDays
+      weight
+      weightGain
+      breastInterval
+      formula
+      expressedMilk
+      babyFood
+      stoolCount
+      urineCount
+      childDevelopment
+      weaningStatus
+      dayCount
+      breastShape
+      nippleUsage
+      expressionTimes
+      expressionTool
+      nippleCondition
+      pain
+      breastfeedingPosition
+      familySupport
+      oMemo
+      sMemo
+      pMemo
+      breastDiagnosis
+      paymentMethod
+      additionalFees
+      otherNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const listMedicalRecords = /* GraphQL */ `
+  query ListMedicalRecords(
+    $filter: ModelMedicalRecordFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listMedicalRecords(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        recordNo
+        recordMonth
+        recordDay
+        place
+        staffName
+        traineeName
+        childName
+        childAgeYears
+        childAgeMonths
+        childAgeDays
+        weight
+        weightGain
+        breastInterval
+        formula
+        expressedMilk
+        babyFood
+        stoolCount
+        urineCount
+        childDevelopment
+        weaningStatus
+        dayCount
+        breastShape
+        nippleUsage
+        expressionTimes
+        expressionTool
+        nippleCondition
+        pain
+        breastfeedingPosition
+        familySupport
+        oMemo
+        sMemo
+        pMemo
+        breastDiagnosis
+        paymentMethod
+        additionalFees
+        otherNotes
+        createdAt
+        updatedAt
+        _version
+        _deleted
+        _lastChangedAt
+        __typename
+      }
+      nextToken
+      startedAt
+      __typename
+    }
+  }
+`;
+export const syncMedicalRecords = /* GraphQL */ `
+  query SyncMedicalRecords(
+    $filter: ModelMedicalRecordFilterInput
+    $limit: Int
+    $nextToken: String
+    $lastSync: AWSTimestamp
+  ) {
+    syncMedicalRecords(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+      lastSync: $lastSync
+    ) {
+      items {
+        id
+        recordNo
+        recordMonth
+        recordDay
+        place
+        staffName
+        traineeName
+        childName
+        childAgeYears
+        childAgeMonths
+        childAgeDays
+        weight
+        weightGain
+        breastInterval
+        formula
+        expressedMilk
+        babyFood
+        stoolCount
+        urineCount
+        childDevelopment
+        weaningStatus
+        dayCount
+        breastShape
+        nippleUsage
+        expressionTimes
+        expressionTool
+        nippleCondition
+        pain
+        breastfeedingPosition
+        familySupport
+        oMemo
+        sMemo
+        pMemo
+        breastDiagnosis
+        paymentMethod
+        additionalFees
+        otherNotes
+        createdAt
+        updatedAt
+        _version
+        _deleted
+        _lastChangedAt
+        __typename
+      }
+      nextToken
+      startedAt
+      __typename
+    }
+  }
+`;

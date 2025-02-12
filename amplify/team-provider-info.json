@@ -30,5 +30,37 @@
         }
       }
     }
+  },
+  "mamascare": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-reservationapp-mamascare-9f848-authRole",
+      "UnauthRoleArn": "arn:aws:iam::560111363951:role/amplify-reservationapp-mamascare-9f848-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::560111363951:role/amplify-reservationapp-mamascare-9f848-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-reservationapp-mamascare-9f848-deployment",
+      "UnauthRoleName": "amplify-reservationapp-mamascare-9f848-unauthRole",
+      "StackName": "amplify-reservationapp-mamascare-9f848",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:560111363951:stack/amplify-reservationapp-mamascare-9f848/f370ae90-e96d-11ef-b9b8-0a8264906ec3",
+      "AmplifyAppId": "d3nstimeii42lv",
+      "APIGatewayAuthURL": "https://s3.amazonaws.com/amplify-reservationapp-mamascare-9f848-deployment/amplify-cfn-templates/api/APIGatewayAuthStack.json"
+    },
+    "categories": {
+      "auth": {
+        "reservationappede5f9f5": {}
+      },
+      "function": {
+        "sendReservationConfirmation": {
+          "deploymentBucketName": "amplify-reservationapp-mamascare-9f848-deployment",
+          "s3Key": "amplify-builds/sendReservationConfirmation-6e757a50784e74485a68-build.zip"
+        }
+      },
+      "api": {
+        "ReservationEmailAPI": {},
+        "reservationapp": {}
+      },
+      "storage": {
+        "s362b9d497": {}
+      }
+    }
   }
 }

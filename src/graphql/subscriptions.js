@@ -403,3 +403,156 @@ export const onDeleteQuestionnaire = /* GraphQL */ `
     }
   }
 `;
+export const onCreateMedicalRecord = /* GraphQL */ `
+  subscription OnCreateMedicalRecord(
+    $filter: ModelSubscriptionMedicalRecordFilterInput
+  ) {
+    onCreateMedicalRecord(filter: $filter) {
+      id
+      recordNo
+      recordMonth
+      recordDay
+      place
+      staffName
+      traineeName
+      childName
+      childAgeYears
+      childAgeMonths
+      childAgeDays
+      weight
+      weightGain
+      breastInterval
+      formula
+      expressedMilk
+      babyFood
+      stoolCount
+      urineCount
+      childDevelopment
+      weaningStatus
+      dayCount
+      breastShape
+      nippleUsage
+      expressionTimes
+      expressionTool
+      nippleCondition
+      pain
+      breastfeedingPosition
+      familySupport
+      oMemo
+      sMemo
+      pMemo
+      breastDiagnosis
+      paymentMethod
+      additionalFees
+      otherNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateMedicalRecord = /* GraphQL */ `
+  subscription OnUpdateMedicalRecord(
+    $filter: ModelSubscriptionMedicalRecordFilterInput
+  ) {
+    onUpdateMedicalRecord(filter: $filter) {
+      id
+      recordNo
+      recordMonth
+      recordDay
+      place
+      staffName
+      traineeName
+      childName
+      childAgeYears
+      childAgeMonths
+      childAgeDays
+      weight
+      weightGain
+      breastInterval
+      formula
+      expressedMilk
+      babyFood
+      stoolCount
+      urineCount
+      childDevelopment
+      weaningStatus
+      dayCount
+      breastShape
+      nippleUsage
+      expressionTimes
+      expressionTool
+      nippleCondition
+      pain
+      breastfeedingPosition
+      familySupport
+      oMemo
+      sMemo
+      pMemo
+      breastDiagnosis
+      paymentMethod
+      additionalFees
+      otherNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteMedicalRecord = /* GraphQL */ `
+  subscription OnDeleteMedicalRecord(
+    $filter: ModelSubscriptionMedicalRecordFilterInput
+  ) {
+    onDeleteMedicalRecord(filter: $filter) {
+      id
+      recordNo
+      recordMonth
+      recordDay
+      place
+      staffName
+      traineeName
+      childName
+      childAgeYears
+      childAgeMonths
+      childAgeDays
+      weight
+      weightGain
+      breastInterval
+      formula
+      expressedMilk
+      babyFood
+      stoolCount
+      urineCount
+      childDevelopment
+      weaningStatus
+      dayCount
+      breastShape
+      nippleUsage
+      expressionTimes
+      expressionTool
+      nippleCondition
+      pain
+      breastfeedingPosition
+      familySupport
+      oMemo
+      sMemo
+      pMemo
+      breastDiagnosis
+      paymentMethod
+      additionalFees
+      otherNotes
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+  }
+`;

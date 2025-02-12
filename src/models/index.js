@@ -4,12 +4,13 @@ import { schema } from './schema';
 
 
 
-const { Todo, Staff, Shift, Reservation, Questionnaire } = initSchema(schema);
+const { Todo, Staff, Shift, Reservation, Questionnaire, MedicalRecord } = initSchema(schema);
 
 export {
   Todo,
   Staff,
   Shift,
   Reservation,
-  Questionnaire
+  Questionnaire,
+  MedicalRecord
 };

@@ -1,15 +1,21 @@
-// App.js
+// File: src/App.js
+
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
 import { Hub } from '@aws-amplify/core';
 import awsconfig from './aws-exports';
+
+// Amplify Auth 周り
 import { fetchAuthSession, signOut } from '@aws-amplify/auth';
+
 import { Authenticator, ThemeProvider as AmplifyThemeProvider } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
 
+// ページコンポーネント
 import StaffShiftPage from './pages/StaffShiftPage';
 import ShiftListPage from './pages/ShiftListPage';
 import StaffCalendarPage from './pages/StaffCalendarPage';
@@ -17,11 +23,10 @@ import MyReservationsPage from './pages/MyReservationsPage';
 import QuestionnaireFormPage from './pages/QuestionnaireFormPage';
 import AdminQuestionnaireListPage from './pages/AdminQuestionnaireListPage';
 import EditQuestionnairePage from './pages/EditQuestionnairePage';
+import MedicalRecordPage from './pages/MedicalRecordPage'; // ← 電子カルテ
+// import BookingPage from './pages/BookingPage'; // 必要なら追加
 
-// ▼ 新しく追加した電子カルテページのインポート
-import MedicalRecordPage from './pages/MedicalRecordPage'; 
-
-// Amplify の設定（aws-exports の内容に加え、REST API の設定）
+// Amplify 設定
 Amplify.configure({
   ...awsconfig,
   API: {
@@ -45,7 +50,7 @@ const muiTheme = createTheme({
   },
 });
 
-// Amplify UI 用のカスタムテーマ設定
+// Amplify UI 用のテーマ
 const amplifyTheme = {
   name: 'custom-amplify-theme',
   tokens: {
@@ -60,13 +65,14 @@ const amplifyTheme = {
   },
 };
 
-// ログインページコンポーネント
+// ログインページ
 function LoginPage() {
   const navigate = useNavigate();
+
   return (
     <Box sx={{ maxWidth: '400px', margin: '40px auto' }}>
       <Authenticator
-        onAuthUIStateChange={(nextAuthState, authData) => {
+        onAuthUIStateChange={(nextAuthState) => {
           if (nextAuthState === 'signedin' || nextAuthState === 'signedIn') {
             navigate('/');
           }
@@ -89,12 +95,12 @@ function LoginPage() {
   );
 }
 
-// 認証済みの場合のみ子コンポーネントをレンダリングするラッパー
+// ログイン必須のルート
 function PrivateRoute({ children, isAuthenticated }) {
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
-// 管理者グループの場合のみ子コンポーネントをレンダリングするラッパー
+// 管理者権限必須のルート
 function AdminRoute({ children, isAdmin }) {
   return isAdmin ? children : <Navigate to="/" />;
 }
@@ -105,7 +111,6 @@ function App() {
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
 
-  // 現在のユーザー状態をチェックする関数
   const checkCurrentUser = async () => {
     try {
       const session = await fetchAuthSession();
@@ -162,18 +167,47 @@ function App() {
       <MuiThemeProvider theme={muiTheme}>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>助産院 予約管理アプリ</Typography>
-            <Button color="inherit" component={Link} to="/">予約</Button>
-            {isAdmin && <Button color="inherit" component={Link} to="/staff-shift">予約管理</Button>}
-            {isAdmin && <Button color="inherit" component={Link} to="/admin/questionnaires">問診票一覧</Button>}
-            {isAuthenticated && <Button color="inherit" component={Link} to="/my-reservations">マイ予約</Button>}
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              助産院 予約管理アプリ
+            </Typography>
+
+            {/* ナビゲーション例 */}
+            <Button color="inherit" component={Link} to="/">
+              予約
+            </Button>
+            {isAdmin && (
+              <Button color="inherit" component={Link} to="/staff-shift">
+                予約管理
+              </Button>
+            )}
+            {isAdmin && (
+              <Button color="inherit" component={Link} to="/admin/questionnaires">
+                問診票一覧
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button color="inherit" component={Link} to="/my-reservations">
+                マイ予約
+              </Button>
+            )}
+            {isAdmin && (
+              <Button color="inherit" component={Link} to="/medical-record">
+                電子カルテ入力
+              </Button>
+            )}
+
             {isAuthenticated ? (
-              <Button color="inherit" onClick={handleSignOut}>サインアウト</Button>
+              <Button color="inherit" onClick={handleSignOut}>
+                サインアウト
+              </Button>
             ) : (
-              <Button color="inherit" component={Link} to="/login">ログイン</Button>
+              <Button color="inherit" component={Link} to="/login">
+                ログイン
+              </Button>
             )}
           </Toolbar>
         </AppBar>
+
         <Container sx={{ mt: 4 }}>
           <Box sx={{ mb: 2 }}>
             {isAuthenticated ? (
@@ -181,9 +215,12 @@ function App() {
                 ログイン中: {username} {isAdmin ? '(管理者)' : '(一般ユーザー)'}
               </Typography>
             ) : (
-              <Typography variant="body2" color="textSecondary">ログインしていません</Typography>
+              <Typography variant="body2" color="textSecondary">
+                ログインしていません
+              </Typography>
             )}
           </Box>
+
           <Routes>
             {/* 一般ユーザー or 管理者共通 */}
             <Route
@@ -244,7 +281,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-            {/* edit-questionnaire */}
             <Route
               path="/edit-questionnaire/:questionnaireId"
               element={
@@ -256,7 +292,7 @@ function App() {
               }
             />
 
-            {/* ▼▼▼ 新規追加: 電子カルテ用ルート ▼▼▼ */}
+            {/* 管理者用の電子カルテページ */}
             <Route
               path="/medical-record"
               element={

@@ -265,3 +265,101 @@ export declare type Questionnaire = LazyLoading extends LazyLoadingDisabled ? Ea
 export declare const Questionnaire: (new (init: ModelInit<Questionnaire>) => Questionnaire) & {
   copyOf(source: Questionnaire, mutator: (draft: MutableModel<Questionnaire>) => MutableModel<Questionnaire> | void): Questionnaire;
 }
+
+type EagerMedicalRecord = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<MedicalRecord, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly recordNo?: string | null;
+  readonly recordMonth?: string | null;
+  readonly recordDay?: string | null;
+  readonly place?: string | null;
+  readonly staffName?: string | null;
+  readonly traineeName?: string | null;
+  readonly childName?: string | null;
+  readonly childAgeYears?: string | null;
+  readonly childAgeMonths?: string | null;
+  readonly childAgeDays?: string | null;
+  readonly weight?: string | null;
+  readonly weightGain?: string | null;
+  readonly breastInterval?: string | null;
+  readonly formula?: string | null;
+  readonly expressedMilk?: string | null;
+  readonly babyFood?: string | null;
+  readonly stoolCount?: string | null;
+  readonly urineCount?: string | null;
+  readonly childDevelopment?: string | null;
+  readonly weaningStatus?: string | null;
+  readonly dayCount?: string | null;
+  readonly breastShape?: string | null;
+  readonly nippleUsage?: string | null;
+  readonly expressionTimes?: string | null;
+  readonly expressionTool?: string | null;
+  readonly nippleCondition?: string | null;
+  readonly pain?: string | null;
+  readonly breastfeedingPosition?: string | null;
+  readonly familySupport?: string | null;
+  readonly oMemo?: string | null;
+  readonly sMemo?: string | null;
+  readonly pMemo?: string | null;
+  readonly breastDiagnosis?: string | null;
+  readonly paymentMethod?: string | null;
+  readonly additionalFees?: string | null;
+  readonly otherNotes?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+type LazyMedicalRecord = {
+  readonly [__modelMeta__]: {
+    identifier: ManagedIdentifier<MedicalRecord, 'id'>;
+    readOnlyFields: 'createdAt' | 'updatedAt';
+  };
+  readonly id: string;
+  readonly recordNo?: string | null;
+  readonly recordMonth?: string | null;
+  readonly recordDay?: string | null;
+  readonly place?: string | null;
+  readonly staffName?: string | null;
+  readonly traineeName?: string | null;
+  readonly childName?: string | null;
+  readonly childAgeYears?: string | null;
+  readonly childAgeMonths?: string | null;
+  readonly childAgeDays?: string | null;
+  readonly weight?: string | null;
+  readonly weightGain?: string | null;
+  readonly breastInterval?: string | null;
+  readonly formula?: string | null;
+  readonly expressedMilk?: string | null;
+  readonly babyFood?: string | null;
+  readonly stoolCount?: string | null;
+  readonly urineCount?: string | null;
+  readonly childDevelopment?: string | null;
+  readonly weaningStatus?: string | null;
+  readonly dayCount?: string | null;
+  readonly breastShape?: string | null;
+  readonly nippleUsage?: string | null;
+  readonly expressionTimes?: string | null;
+  readonly expressionTool?: string | null;
+  readonly nippleCondition?: string | null;
+  readonly pain?: string | null;
+  readonly breastfeedingPosition?: string | null;
+  readonly familySupport?: string | null;
+  readonly oMemo?: string | null;
+  readonly sMemo?: string | null;
+  readonly pMemo?: string | null;
+  readonly breastDiagnosis?: string | null;
+  readonly paymentMethod?: string | null;
+  readonly additionalFees?: string | null;
+  readonly otherNotes?: string | null;
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
+}
+
+export declare type MedicalRecord = LazyLoading extends LazyLoadingDisabled ? EagerMedicalRecord : LazyMedicalRecord
+
+export declare const MedicalRecord: (new (init: ModelInit<MedicalRecord>) => MedicalRecord) & {
+  copyOf(source: MedicalRecord, mutator: (draft: MutableModel<MedicalRecord>) => MutableModel<MedicalRecord> | void): MedicalRecord;
+}

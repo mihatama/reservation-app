@@ -15,6 +15,7 @@ export type AmplifyDependentResourcesAttributes = {
     "reservationappede5f9f5": {
       "AppClientID": "string",
       "AppClientIDWeb": "string",
+      "CreatedSNSRole": "string",
       "IdentityPoolId": "string",
       "IdentityPoolName": "string",
       "UserPoolArn": "string",

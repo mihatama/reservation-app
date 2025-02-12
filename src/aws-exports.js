@@ -6,18 +6,18 @@ const awsmobile = {
     "aws_cloud_logic_custom": [
         {
             "name": "ReservationEmailAPI",
-            "endpoint": "https://o6zm3tdzxf.execute-api.ap-northeast-1.amazonaws.com/dev",
+            "endpoint": "https://4gdvu4xlob.execute-api.ap-northeast-1.amazonaws.com/mamascare",
             "region": "ap-northeast-1"
         }
     ],
-    "aws_appsync_graphqlEndpoint": "https://vfhoak3mdrgm5jxvmkorncw2se.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+    "aws_appsync_graphqlEndpoint": "https://3h3ynlg7ufhkpa6jswlzfiy5lm.appsync-api.ap-northeast-1.amazonaws.com/graphql",
     "aws_appsync_region": "ap-northeast-1",
     "aws_appsync_authenticationType": "API_KEY",
-    "aws_appsync_apiKey": "da2-bi4kac23bnam7jsrboc6tvmf2q",
-    "aws_cognito_identity_pool_id": "ap-northeast-1:4e808b00-f8b9-401f-8f77-189cf4539b3a",
+    "aws_appsync_apiKey": "da2-yohzlirx2bb6dak7qnfux6qmca",
+    "aws_cognito_identity_pool_id": "ap-northeast-1:ff47f56b-9c7b-48c2-910c-aaab825fe615",
     "aws_cognito_region": "ap-northeast-1",
-    "aws_user_pools_id": "ap-northeast-1_BeBVHo6gl",
-    "aws_user_pools_web_client_id": "52g7faagsgatn5rrl03snqj7ki",
+    "aws_user_pools_id": "ap-northeast-1_AsxCddHvH",
+    "aws_user_pools_web_client_id": "44nbmip5h3nbqn7ltns5mdfok9",
     "oauth": {},
     "aws_cognito_username_attributes": [
         "EMAIL"
@@ -26,9 +26,10 @@ const awsmobile = {
     "aws_cognito_signup_attributes": [
         "EMAIL"
     ],
-    "aws_cognito_mfa_configuration": "OFF",
+    "aws_cognito_mfa_configuration": "OPTIONAL",
     "aws_cognito_mfa_types": [
-        "SMS"
+        "SMS",
+        "TOTP"
     ],
     "aws_cognito_password_protection_settings": {
         "passwordPolicyMinLength": 8,
@@ -37,7 +38,7 @@ const awsmobile = {
     "aws_cognito_verification_mechanisms": [
         "EMAIL"
     ],
-    "aws_user_files_s3_bucket": "reservationappe8cb5b46a406400688bb1204204b43e6ddcac-dev",
+    "aws_user_files_s3_bucket": "reservationappe8cb5b46a406400688bb1204204b43e69f848-mamascare",
     "aws_user_files_s3_bucket_region": "ap-northeast-1"
 };
 
