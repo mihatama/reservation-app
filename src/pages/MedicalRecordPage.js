@@ -2,14 +2,20 @@
 
 import React, { useState } from 'react';
 
-// ※ Amplify の新バージョンの場合
+// 新バージョンのAmplify
 import { GraphQLAPI, graphqlOperation } from '@aws-amplify/api-graphql';
 
-// ※ 旧バージョンなら (要確認): 
+// 旧バージョンの場合 (要確認):
 // import { API, graphqlOperation } from 'aws-amplify';
 
 import { createMedicalRecord } from '../graphql/mutations'; 
-import { Box, TextField, Button, Typography, MenuItem } from '@mui/material';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  MenuItem
+} from '@mui/material';
 
 export default function MedicalRecordPage() {
   // 入力フォームの state
@@ -61,7 +67,7 @@ export default function MedicalRecordPage() {
   // 保存ボタン
   const handleSave = async () => {
     try {
-      // GraphQLAPI でmutation実行 (新バージョンの場合)
+      // GraphQLAPI で mutation 実行
       await GraphQLAPI.graphql(
         graphqlOperation(createMedicalRecord, { input: formData })
       );
@@ -114,8 +120,11 @@ export default function MedicalRecordPage() {
 
   return (
     <Box sx={{ maxWidth: 600, margin: '0 auto', p: 2 }}>
-      <Typography variant="h6" mb={2}>電子カルテ 作成フォーム</Typography>
+      <Typography variant="h6" mb={2}>
+        電子カルテ 作成フォーム
+      </Typography>
 
+      {/* 場所（Select） */}
       <TextField
         select
         fullWidth
@@ -123,7 +132,8 @@ export default function MedicalRecordPage() {
         name="place"
         value={formData.place}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       >
         <MenuItem value="">未選択</MenuItem>
         <MenuItem value="宝塚">宝塚</MenuItem>
@@ -134,22 +144,34 @@ export default function MedicalRecordPage() {
         <MenuItem value="産後ケア">産後ケア</MenuItem>
       </TextField>
 
+      {/* No */}
       <TextField
         fullWidth
         label="No"
         name="recordNo"
         value={formData.recordNo}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        placeholder="例: 001"
       />
 
+      {/* 月日 */}
       <Box display="flex" gap={1}>
         <TextField
           label="月"
           name="recordMonth"
           value={formData.recordMonth}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="例: 8"
           sx={{ flex: 1 }}
         />
         <TextField
@@ -157,18 +179,26 @@ export default function MedicalRecordPage() {
           name="recordDay"
           value={formData.recordDay}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="例: 15"
           sx={{ flex: 1 }}
         />
       </Box>
 
+      {/* 担当者名・研修生名 */}
       <TextField
         fullWidth
         label="担当者名"
         name="staffName"
         value={formData.staffName}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="担当スタッフ氏名"
       />
       <TextField
         fullWidth
@@ -176,15 +206,21 @@ export default function MedicalRecordPage() {
         name="traineeName"
         value={formData.traineeName}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="研修生の方の氏名"
       />
+
+      {/* お子様情報 */}
       <TextField
         fullWidth
         label="お子様の名前"
         name="childName"
         value={formData.childName}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: まなり たろう"
       />
 
       <Box display="flex" gap={1}>
@@ -193,7 +229,11 @@ export default function MedicalRecordPage() {
           name="childAgeYears"
           value={formData.childAgeYears}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
         <TextField
@@ -201,7 +241,11 @@ export default function MedicalRecordPage() {
           name="childAgeMonths"
           value={formData.childAgeMonths}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
         <TextField
@@ -209,7 +253,11 @@ export default function MedicalRecordPage() {
           name="childAgeDays"
           value={formData.childAgeDays}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
       </Box>
@@ -220,26 +268,39 @@ export default function MedicalRecordPage() {
           name="weight"
           value={formData.weight}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
+          placeholder="例: 3200"
         />
         <TextField
           label="増加量 (g/日)"
           name="weightGain"
           value={formData.weightGain}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
+          placeholder="例: 30"
         />
       </Box>
 
+      {/* 授乳・ミルク・離乳食 */}
       <TextField
         fullWidth
         label="母乳間隔"
         name="breastInterval"
         value={formData.breastInterval}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 3時間おき"
       />
       <TextField
         fullWidth
@@ -247,7 +308,9 @@ export default function MedicalRecordPage() {
         name="formula"
         value={formData.formula}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 80mlを1日3回"
       />
       <TextField
         fullWidth
@@ -255,7 +318,9 @@ export default function MedicalRecordPage() {
         name="expressedMilk"
         value={formData.expressedMilk}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 40mlを1日2回"
       />
       <TextField
         fullWidth
@@ -263,16 +328,23 @@ export default function MedicalRecordPage() {
         name="babyFood"
         value={formData.babyFood}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 10倍粥・ペースト状"
       />
 
+      {/* 便・尿回数 */}
       <Box display="flex" gap={1}>
         <TextField
           label="便回数"
           name="stoolCount"
           value={formData.stoolCount}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
         <TextField
@@ -280,18 +352,25 @@ export default function MedicalRecordPage() {
           name="urineCount"
           value={formData.urineCount}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
       </Box>
 
+      {/* 発達・断乳 */}
       <TextField
         fullWidth
         label="児の発達"
         name="childDevelopment"
         value={formData.childDevelopment}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 首すわり・寝返りなど"
       />
       <TextField
         fullWidth
@@ -299,16 +378,23 @@ export default function MedicalRecordPage() {
         name="weaningStatus"
         value={formData.weaningStatus}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        placeholder="例: 断乳予定 / 卒乳済 など"
       />
 
+      {/* 乳房ケア情報 */}
       <TextField
         fullWidth
         label="乳房ケア日目"
         name="dayCount"
         value={formData.dayCount}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
       />
       <TextField
         fullWidth
@@ -316,7 +402,8 @@ export default function MedicalRecordPage() {
         name="breastShape"
         value={formData.breastShape}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
       <TextField
         fullWidth
@@ -324,7 +411,8 @@ export default function MedicalRecordPage() {
         name="nippleUsage"
         value={formData.nippleUsage}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
 
       <Box display="flex" gap={1}>
@@ -333,7 +421,11 @@ export default function MedicalRecordPage() {
           name="expressionTimes"
           value={formData.expressionTimes}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
           sx={{ flex: 1 }}
         />
         <TextField
@@ -341,7 +433,8 @@ export default function MedicalRecordPage() {
           name="expressionTool"
           value={formData.expressionTool}
           onChange={handleChange}
-          margin="normal"
+          margin="dense"
+          size="small"
           sx={{ flex: 1 }}
         />
       </Box>
@@ -352,7 +445,8 @@ export default function MedicalRecordPage() {
         name="nippleCondition"
         value={formData.nippleCondition}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
       <TextField
         fullWidth
@@ -360,7 +454,8 @@ export default function MedicalRecordPage() {
         name="pain"
         value={formData.pain}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
       <TextField
         fullWidth
@@ -368,25 +463,30 @@ export default function MedicalRecordPage() {
         name="breastfeedingPosition"
         value={formData.breastfeedingPosition}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
 
+      {/* サポート状況 */}
       <TextField
         fullWidth
         label="家族などのサポート状況"
         name="familySupport"
         value={formData.familySupport}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
 
+      {/* O, S, P メモ */}
       <TextField
         fullWidth
         label="O) メモ"
         name="oMemo"
         value={formData.oMemo}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
         multiline
         rows={2}
       />
@@ -396,7 +496,8 @@ export default function MedicalRecordPage() {
         name="sMemo"
         value={formData.sMemo}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
         multiline
         rows={2}
       />
@@ -406,27 +507,30 @@ export default function MedicalRecordPage() {
         name="pMemo"
         value={formData.pMemo}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
         multiline
         rows={2}
       />
 
+      {/* 診断・支払い情報 */}
       <TextField
         fullWidth
         label="乳房診断"
         name="breastDiagnosis"
         value={formData.breastDiagnosis}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
-
       <TextField
         fullWidth
         label="支払い方法 (カード・PayPay・現金等)"
         name="paymentMethod"
         value={formData.paymentMethod}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
       <TextField
         fullWidth
@@ -434,7 +538,8 @@ export default function MedicalRecordPage() {
         name="additionalFees"
         value={formData.additionalFees}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
       />
       <TextField
         fullWidth
@@ -442,11 +547,13 @@ export default function MedicalRecordPage() {
         name="otherNotes"
         value={formData.otherNotes}
         onChange={handleChange}
-        margin="normal"
+        margin="dense"
+        size="small"
         multiline
         rows={3}
       />
 
+      {/* 保存ボタン */}
       <Box textAlign="center" mt={4}>
         <Button variant="contained" color="primary" onClick={handleSave}>
           保存

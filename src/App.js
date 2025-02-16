@@ -26,18 +26,23 @@ import EditQuestionnairePage from './pages/EditQuestionnairePage';
 import MedicalRecordPage from './pages/MedicalRecordPage'; // ← 電子カルテ
 // import BookingPage from './pages/BookingPage'; // 必要なら追加
 
-// Amplify 設定
+// --- 修正箇所: Identity Pool 無効化のため Auth で上書き ---
 Amplify.configure({
   ...awsconfig,
+  Auth: {
+    // ここで identityPoolId を無効化する
+    identityPoolId: undefined,
+  },
   API: {
     REST: {
       ReservationEmailAPI: {
-        endpoint: "https://o6zm3tdzxf.execute-api.ap-northeast-1.amazonaws.com/dev",
+        endpoint: "https://4gdvu4xlob.execute-api.ap-northeast-1.amazonaws.com/mamascare",
         region: "ap-northeast-1"
       }
     }
   }
 });
+// --- 修正箇所ここまで ---
 
 // Material-UI 用のテーマ設定
 const muiTheme = createTheme({

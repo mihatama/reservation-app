@@ -1,8 +1,6 @@
 {
   "version": "1",
   "cognitoConfig": {
-    "identityPoolName": "reservationappede5f9f5_identitypool_ede5f9f5",
-    "allowUnauthenticatedIdentities": false,
     "resourceNameTruncated": "reservede5f9f5",
     "userPoolName": "reservationappede5f9f5_userpool_ede5f9f5",
     "autoVerifiedAttributes": [
@@ -17,7 +15,7 @@
     "smsVerificationMessage": "Your verification code is {####}",
     "emailVerificationSubject": "Your verification code",
     "emailVerificationMessage": "Your verification code is {####}",
-    "defaultPasswordPolicy": false,
+    "defaultPasswordPolicy": true,
     "passwordPolicyMinLength": 8,
     "passwordPolicyCharacters": [],
     "requiredAttributes": [
@@ -36,8 +34,8 @@
     "userpoolClientSetAttributes": false,
     "sharedId": "ede5f9f5",
     "resourceName": "reservationappede5f9f5",
-    "authSelections": "identityPoolAndUserPool",
-    "useDefault": "default",
+    "authSelections": "userPoolOnly",
+    "useDefault": "manual",
     "usernameAttributes": [
       "email"
     ],
